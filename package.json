@@ -1,0 +1,29 @@
+{
+  "name": "wallet-case",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:bff\" \"npm run dev:mobile\"",
+    "dev:bff": "npm run dev -w @wallet/bff",
+    "dev:mobile": "npm run start -w @wallet/mobile",
+    "lint": "biome check .",
+    "format": "biome format . --write",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "Guilherme Somenzi <somenziguilherme@gmail.com>",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.5",
+    "@commitlint/cli": "^20.4.2",
+    "@commitlint/config-conventional": "^20.4.2",
+    "concurrently": "^9.2.1",
+    "husky": "^9.1.7"
+  }
+}

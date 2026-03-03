@@ -1,0 +1,118 @@
+{
+    "$schema": "https://biomejs.dev/schemas/2.4.5/schema.json",
+    "vcs": {
+        "enabled": true,
+        "clientKind": "git",
+        "useIgnoreFile": true
+    },
+    "files": {
+        "ignoreUnknown": true,
+        "includes": [
+            "**",
+            "!**/node_modules",
+            "!**/dist",
+            "!**/build",
+            "!**/coverage",
+            "!**/.expo",
+            "!**/android",
+            "!**/ios"
+        ]
+    },
+    "formatter": {
+        "enabled": true,
+        "indentStyle": "space",
+        "indentWidth": 4,
+        "lineWidth": 120,
+        "bracketSpacing": true
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "recommended": true,
+            "suspicious": {
+                "noExplicitAny": "warn"
+            },
+            "style": {
+                "useImportType": "off",
+                "noUnusedTemplateLiteral": "error",
+                "useTemplate": "error",
+                "useConsistentArrayType": {
+                    "level": "error",
+                    "options": {
+                        "syntax": "shorthand"
+                    }
+                },
+                "useFilenamingConvention": {
+                    "level": "error",
+                    "options": {
+                        "filenameCases": ["kebab-case"],
+                        "strictCase": true,
+                        "requireAscii": true
+                    }
+                }
+            },
+            "correctness": {
+                "noUnusedImports": "error"
+            },
+            "complexity": {
+                "noStaticOnlyClass": "off"
+            }
+        }
+    },
+    "javascript": {
+        "parser": {
+            "unsafeParameterDecoratorsEnabled": true
+        },
+        "formatter": {
+            "quoteStyle": "double",
+            "semicolons": "always",
+            "trailingCommas": "es5",
+            "arrowParentheses": "always"
+        }
+    },
+    "json": {
+        "formatter": {
+            "trailingCommas": "none"
+        }
+    },
+    "assist": {
+        "enabled": true,
+        "actions": {
+            "source": {
+                "organizeImports": "on"
+            }
+        }
+    },
+    "overrides": [
+        {
+            "includes": ["*.test.ts", "*.spec.ts"],
+            "linter": {
+                "rules": {
+                    "suspicious": {
+                        "noExplicitAny": "off"
+                    }
+                }
+            }
+        },
+        {
+            "includes": ["*.config.js", "*.config.ts"],
+            "linter": {
+                "rules": {
+                    "style": {
+                        "useFilenamingConvention": "off"
+                    }
+                }
+            }
+        },
+        {
+            "includes": ["apps/mobile/**"],
+            "linter": {
+                "rules": {
+                    "style": {
+                        "useFilenamingConvention": "off"
+                    }
+                }
+            }
+        }
+    ]
+}
