@@ -11,6 +11,8 @@
         "dev": "concurrently \"npm run dev:bff\" \"npm run dev:mobile\"",
         "dev:bff": "npm run dev -w @wallet/bff",
         "dev:mobile": "npm run start -w @wallet/mobile",
+        "test:bff": "npm run test -w @wallet/bff",
+        "test:mobile": "npm run test -w @wallet/mobile",
         "lint": "biome check .",
         "format": "biome format . --write",
         "prepare": "husky"
