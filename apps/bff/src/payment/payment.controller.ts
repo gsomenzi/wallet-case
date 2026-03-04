@@ -1,4 +1,12 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Post } from "@nestjs/common";
+import { PaymentService } from "./payment.service";
 
-@Controller('payment')
-export class PaymentController {}
+@Controller("v1/payments")
+export class PaymentController {
+    constructor(private readonly paymentService: PaymentService) {}
+
+    @Post()
+    async createPayment() {
+        return await this.paymentService.processPayment();
+    }
+}
