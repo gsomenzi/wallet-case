@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from "react-native";
 
 type ButtonProps = {
     children: React.ReactNode;
@@ -25,8 +25,17 @@ export function Button({ children, colorScheme = "primary", isLoading, onPress }
     }
 
     return (
-        <TouchableOpacity style={[styles.container, getColorSchemeStyles()]} onPress={handlePress}>
-            {typeof children === "string" ? <Text style={styles.text}>{children}</Text> : children}
+        <TouchableOpacity
+            style={[styles.container, getColorSchemeStyles(), { opacity: isLoading ? 0.7 : 1 }]}
+            onPress={handlePress}
+        >
+            {isLoading ? (
+                <ActivityIndicator size={20} style={{ display: isLoading ? "flex" : "none" }} color="#fff" />
+            ) : typeof children === "string" ? (
+                <Text style={styles.text}>{children}</Text>
+            ) : (
+                children
+            )}
         </TouchableOpacity>
     );
 }
@@ -50,5 +59,6 @@ const styles = StyleSheet.create({
     text: {
         color: "#fff",
         fontWeight: "bold",
+        lineHeight: 20,
     },
 });
