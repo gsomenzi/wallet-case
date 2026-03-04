@@ -14,6 +14,7 @@
         "dev:mobile:android": "npm run start -w @wallet/mobile -- --android",
         "dev:mobile:ios": "npm run start -w @wallet/mobile -- --ios",
         "test:bff": "npm run test -w @wallet/bff",
+        "test:bff:cov": "npm run test:cov -w @wallet/bff",
         "test:mobile": "npm run test -w @wallet/mobile",
         "lint": "biome check .",
         "format": "biome format . --write",
