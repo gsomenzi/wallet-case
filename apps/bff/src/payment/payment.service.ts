@@ -1,9 +1,10 @@
 import { Injectable } from "@nestjs/common";
+import { PaymentRequest } from "./payment-request.dto";
 import { PaymentResponse, StepResponse } from "./payment-response.entity";
 
 @Injectable()
 export class PaymentService {
-    async processPayment(): Promise<PaymentResponse> {
+    async processPayment(_paymentRequest: PaymentRequest): Promise<PaymentResponse> {
         const paymentResponse: PaymentResponse = PaymentResponse.create();
         paymentResponse.addStep(await this.validateAccount());
         paymentResponse.addStep(await this.validateCard());
