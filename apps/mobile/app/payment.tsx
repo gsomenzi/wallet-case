@@ -18,6 +18,7 @@ const apiClient = axios.create({
 
 export default function PaymentView() {
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<{ title: string; message: string } | null>(null);
     const [cardNumber, setCardNumber] = useState("");
     const [cardHolder, setCardHolder] = useState("");
     const [expirationDate, setExpirationDate] = useState("");
@@ -37,6 +38,7 @@ export default function PaymentView() {
     async function handlePayment() {
         try {
             setIsLoading(true);
+            setError(null);
             const response = await apiClient.post<PaymentResponse>("/payments", {
                 cardNumber,
                 cardHolder,
@@ -51,8 +53,12 @@ export default function PaymentView() {
                 },
             });
             console.log("Payment response:", response.data);
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Payment error:", error);
+            setError({
+                title: "Falha ao processar o pagamento.",
+                message: (error as any)?.response?.data?.message || "Por favor, tente novamente mais tarde.",
+            });
         } finally {
             setIsLoading(false);
         }
@@ -87,6 +93,12 @@ export default function PaymentView() {
                     <Button isLoading={isLoading} onPress={handlePayment}>
                         Pagar
                     </Button>
+                    {error && (
+                        <ThemedView style={styles.errorMessageContainer}>
+                            <ThemedText style={styles.errorMessageTitle}>{error?.title}</ThemedText>
+                            <ThemedText style={styles.errorMessageDescription}>{error?.message}</ThemedText>
+                        </ThemedView>
+                    )}
                 </ThemedView>
             </Pressable>
         </ThemedView>
@@ -112,5 +124,17 @@ const styles = StyleSheet.create({
     },
     fullWidth: {
         flex: 1,
+    },
+    errorMessageContainer: {
+        padding: 12,
+        backgroundColor: "#f8d7da",
+        borderRadius: 8,
+    },
+    errorMessageTitle: {
+        fontWeight: "bold",
+        color: "#721c24",
+    },
+    errorMessageDescription: {
+        color: "#721c24",
     },
 });
