@@ -1,11 +1,13 @@
 import axios from "axios";
 import Constants from "expo-constants";
-import { useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import { Keyboard, Pressable, StyleSheet } from "react-native";
 import { Button } from "@/components/button";
 import { TextField } from "@/components/text-input";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { PaymentResponse } from "../features/payment/payment.entity";
 
 const apiUrl = Constants.expoConfig?.extra?.apiUrl;
 
@@ -21,15 +23,32 @@ export default function PaymentView() {
     const [expirationDate, setExpirationDate] = useState("");
     const [cvv, setCvv] = useState("");
     const [amount, setAmount] = useState("");
+
+    const cleanForm = useCallback(() => {
+        setCardNumber("");
+        setCardHolder("");
+        setExpirationDate("");
+        setCvv("");
+        setAmount("");
+    }, []);
+
+    useFocusEffect(cleanForm);
+
     async function handlePayment() {
         try {
             setIsLoading(true);
-            const response = await apiClient.post("/payments", {
+            const response = await apiClient.post<PaymentResponse>("/payments", {
                 cardNumber,
                 cardHolder,
                 expirationDate,
                 cvv,
                 amount,
+            });
+            router.push({
+                pathname: "/feedback",
+                params: {
+                    data: JSON.stringify(response.data),
+                },
             });
             console.log("Payment response:", response.data);
         } catch (error) {

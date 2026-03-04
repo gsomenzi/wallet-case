@@ -12,6 +12,7 @@ export default function RootLayout() {
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
             <Stack>
                 <Stack.Screen name="payment" options={{ headerShown: false }} />
+                <Stack.Screen name="feedback" options={{ title: "Feedback", headerBackTitle: "Voltar" }} />
             </Stack>
             <StatusBar style="auto" />
         </ThemeProvider>
