@@ -58,6 +58,34 @@ npm run dev:bff
 npm run dev:mobile
 ```
 
+### Rodar Mobile por plataforma
+
+Android:
+
+```bash
+npm run dev:mobile:android
+```
+
+iOS:
+
+```bash
+npm run dev:mobile:ios
+```
+
+## Testes
+
+Executar apenas os testes do BFF:
+
+```bash
+npm run test:bff
+```
+
+Executar apenas os testes do Mobile:
+
+```bash
+npm run test:mobile
+```
+
 ## Qualidade de código
 
 ### BiomeJS
@@ -113,3 +141,12 @@ Motivação:
 - Menor fricção para instalação e execução inicial
 
 > Essa escolha foi feita para **maximizar a compatibilidade com o ambiente de desenvolvimento**.
+
+## Uso de IA no desenvolvimento
+
+Durante o desenvolvimento deste projeto, estou utilizando IA como apoio, com os seguintes usos:
+
+- **GitHub Copilot Pro** com seleção automática de modelo
+- **Autocomplete** durante a implementação de funcionalidades
+- **Geração de trechos simples e rotineiros**, como criar listas e renderizar com `map`
+- **Apoio na atualização da documentação** do projeto
