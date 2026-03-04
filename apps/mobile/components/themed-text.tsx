@@ -3,18 +3,26 @@ import { StyleSheet, Text, type TextProps } from "react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
 export type ThemedTextProps = TextProps & {
+    textAlign?: "auto" | "left" | "right" | "center" | "justify";
     lightColor?: string;
     darkColor?: string;
     type?: "default" | "title" | "defaultSemiBold" | "subtitle" | "link";
 };
 
-export function ThemedText({ style, lightColor, darkColor, type = "default", ...rest }: ThemedTextProps) {
+export function ThemedText({
+    style,
+    lightColor,
+    darkColor,
+    type = "default",
+    textAlign = "left",
+    ...rest
+}: ThemedTextProps) {
     const color = useThemeColor({ light: lightColor, dark: darkColor }, "text");
 
     return (
         <Text
             style={[
-                { color },
+                { color, textAlign },
                 type === "default" ? styles.default : undefined,
                 type === "title" ? styles.title : undefined,
                 type === "defaultSemiBold" ? styles.defaultSemiBold : undefined,
