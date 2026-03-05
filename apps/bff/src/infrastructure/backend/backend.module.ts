@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { DelaySimulatorModule } from "../delay-simulator/delay-simulator.module";
 import { AccountValidator } from "./account-validator/account-validator.interface";
 import { MockAccountValidator } from "./account-validator/implementations/mock-account-validator";
 import { AcquirerProcessor } from "./acquirer-processor/acquirer-processor.interface";
@@ -14,7 +13,6 @@ import { MockPaymentProcessor } from "./payment-processor/implementations/mock-p
 import { PaymentProcessor } from "./payment-processor/payment-processor.interface";
 
 @Module({
-    imports: [DelaySimulatorModule],
     providers: [
         {
             provide: AccountValidator,
