@@ -1,10 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { AccountValidator } from "../infrastructure/backend/account-validator/account-validator.interface";
-import { AcquirerProcessor } from "../infrastructure/backend/acquirer-processor/acquirer-processor.interface";
-import { AntiFraudValidator } from "../infrastructure/backend/anti-fraud-validator/anti-fraud-validator.interface";
-import { CardValidator } from "../infrastructure/backend/card-validator/card-validator.interface";
-import { NotificationSender } from "../infrastructure/backend/notification-sender/notification-sender.interface";
-import { PaymentProcessor } from "../infrastructure/backend/payment-processor/payment-processor.interface";
+import { AccountValidator } from "../../infrastructure/backend/account-validator/account-validator.interface";
+import { AcquirerProcessor } from "../../infrastructure/backend/acquirer-processor/acquirer-processor.interface";
+import { AntiFraudValidator } from "../../infrastructure/backend/anti-fraud-validator/anti-fraud-validator.interface";
+import { CardValidator } from "../../infrastructure/backend/card-validator/card-validator.interface";
+import { NotificationSender } from "../../infrastructure/backend/notification-sender/notification-sender.interface";
+import { PaymentProcessor } from "../../infrastructure/backend/payment-processor/payment-processor.interface";
 import { PaymentRequest } from "./payment-request.dto";
 import { PaymentResponse, StepResponse } from "./payment-response.entity";
 
