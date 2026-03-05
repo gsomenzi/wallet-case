@@ -5,9 +5,9 @@ import { ErrorMessage } from "@/components/error-message";
 import { TextField } from "@/components/text-field";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import type { PaymentViewModelProps } from "./payment.view-model";
+import type { PaymentFormViewModelProps } from "./payment-form.view-model";
 
-export function PaymentView({ control, errors, error, isLoading, onSubmitPayment }: PaymentViewModelProps) {
+export function PaymentFormView({ control, errors, error, isLoading, onSubmitPayment }: PaymentFormViewModelProps) {
     return (
         <ThemedView flex={1}>
             <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>

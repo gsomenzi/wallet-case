@@ -14,8 +14,8 @@ export default function RootLayout() {
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
             <RestyleThemeProvider theme={theme}>
                 <Stack>
-                    <Stack.Screen name="payment" options={{ headerShown: false }} />
-                    <Stack.Screen name="feedback" options={{ title: "Feedback", headerBackTitle: "Voltar" }} />
+                    <Stack.Screen name="payment-form" options={{ headerShown: false }} />
+                    <Stack.Screen name="payment-feedback" options={{ title: "Feedback", headerBackTitle: "Voltar" }} />
                 </Stack>
                 <StatusBar style="auto" />
             </RestyleThemeProvider>

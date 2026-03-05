@@ -1,5 +1,5 @@
 import { Redirect } from "expo-router";
 
 export default function RootView() {
-    return <Redirect href="/payment" />;
+    return <Redirect href="/payment-form" />;
 }

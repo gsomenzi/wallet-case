@@ -24,7 +24,7 @@ const defaultValues: PaymentFormData = {
     amount: "",
 };
 
-export function usePaymentViewModel() {
+export function usePaymentFormViewModel() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<{ title: string; message: string } | null>(null);
     const paymentService = new PaymentService();
@@ -55,8 +55,9 @@ export function usePaymentViewModel() {
                 cvv: data.cvv,
                 amount: data.amount,
             });
+
             router.push({
-                pathname: "/feedback",
+                pathname: "/payment-feedback",
                 params: {
                     data: JSON.stringify(response),
                 },
@@ -87,4 +88,4 @@ export function usePaymentViewModel() {
     };
 }
 
-export type PaymentViewModelProps = ReturnType<typeof usePaymentViewModel>;
+export type PaymentFormViewModelProps = ReturnType<typeof usePaymentFormViewModel>;
