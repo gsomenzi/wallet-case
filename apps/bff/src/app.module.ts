@@ -1,4 +1,6 @@
 import { Module } from "@nestjs/common";
+import { APP_FILTER } from "@nestjs/core";
+import { GlobalExceptionFilter } from "./application/global-exception-filter";
 import { BackendModule } from "./infrastructure/backend/backend.module";
 import { BooleanRandomizerType } from "./infrastructure/boolean-randomizer/boolean-randomizer.factory";
 import { BooleanRandomizerModule } from "./infrastructure/boolean-randomizer/boolean-randomizer.module";
@@ -11,6 +13,12 @@ import { PaymentModule } from "./payment/payment.module";
         DelaySimulatorModule.forRoot(),
         BackendModule,
         PaymentModule,
+    ],
+    providers: [
+        {
+            provide: APP_FILTER,
+            useClass: GlobalExceptionFilter,
+        },
     ],
 })
 export class AppModule {}

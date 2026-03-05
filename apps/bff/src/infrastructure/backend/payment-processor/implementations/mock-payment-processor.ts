@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { PaymentProcessingFailedError } from "src/application/application-errors/payment-processing-error";
 import { BooleanRandomizer } from "src/infrastructure/boolean-randomizer/boolean-randomizer.interface";
 import { DelaySimulator } from "src/infrastructure/delay-simulator/delay-simulator.interface";
 import { PaymentProcessor } from "../payment-processor.interface";
@@ -16,7 +17,10 @@ export class MockPaymentProcessor implements PaymentProcessor {
     async process(): Promise<void> {
         await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
         if (!this.booleanRandomizer.randomize()) {
-            throw new Error("Payment processing failed");
+            throw new PaymentProcessingFailedError({
+                minDelayMs: MIN_DELAY_MS,
+                maxDelayMs: MAX_DELAY_MS,
+            });
         }
     }
 }

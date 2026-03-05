@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { AntiFraudValidationFailedError } from "src/application/application-errors/anti-fraud-validation-error";
 import { BooleanRandomizer } from "src/infrastructure/boolean-randomizer/boolean-randomizer.interface";
 import { DelaySimulator } from "src/infrastructure/delay-simulator/delay-simulator.interface";
 import { AntiFraudValidator } from "../anti-fraud-validator.interface";
@@ -16,7 +17,10 @@ export class MockAntiFraudValidator implements AntiFraudValidator {
     async validate(): Promise<boolean> {
         await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
         if (!this.booleanRandomizer.randomize()) {
-            throw new Error("Anti-fraud validation failed");
+            throw new AntiFraudValidationFailedError({
+                minDelayMs: MIN_DELAY_MS,
+                maxDelayMs: MAX_DELAY_MS,
+            });
         }
         return true;
     }
