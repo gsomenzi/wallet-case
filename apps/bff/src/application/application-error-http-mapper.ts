@@ -54,7 +54,7 @@ export class ApplicationErrorHttpMapper {
 
         return new InternalServerErrorException({
             code: error.code ?? "UNKNOWN_APPLICATION_ERROR",
-            message: error.message ?? "Unexpected application error",
+            message: error.message ?? "Erro desconhecido",
             details: error.details,
         });
     }

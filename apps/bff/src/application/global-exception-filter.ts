@@ -17,7 +17,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
                   ? exception
                   : new InternalServerErrorException({
                         code: "INTERNAL_ERROR",
-                        message: "Unexpected error",
+                        message: "Erro desconhecido",
                     });
 
         const status = httpException.getStatus();
