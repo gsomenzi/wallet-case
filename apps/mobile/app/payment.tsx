@@ -4,7 +4,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Keyboard, Pressable, StyleSheet } from "react-native";
 import { Button } from "@/components/button";
-import { TextField } from "@/components/text-input";
+import { TextField } from "@/components/text-field";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { PaymentResponse } from "../features/payment/payment.entity";
@@ -33,7 +33,13 @@ export default function PaymentView() {
         setAmount("");
     }, []);
 
-    useFocusEffect(cleanForm);
+    const handleAmountChange = useCallback((_: string, rawText?: string) => {
+        if (!rawText || rawText === "NaN") {
+            setAmount("");
+            return;
+        }
+        setAmount(rawText);
+    }, []);
 
     async function handlePayment() {
         try {
@@ -64,6 +70,8 @@ export default function PaymentView() {
         }
     }
 
+    useFocusEffect(cleanForm);
+
     return (
         <ThemedView style={styles.view}>
             <Pressable style={styles.view} onPress={Keyboard.dismiss}>
@@ -72,23 +80,50 @@ export default function PaymentView() {
                         Pagamento
                     </ThemedText>
                     <ThemedView style={styles.form}>
-                        <TextField
-                            placeholder="Número do cartão"
-                            value={cardNumber}
-                            onChangeText={setCardNumber}
-                            autoFocus
-                        />
-                        <ThemedView style={styles.row}>
-                            <TextField
-                                placeholder="Data de validade"
-                                value={expirationDate}
-                                onChangeText={setExpirationDate}
-                                style={styles.fullWidth}
+                        <TextField>
+                            <TextField.MaskedInput
+                                mask="9999 9999 9999 9999"
+                                placeholder="Número do cartão"
+                                value={cardNumber}
+                                keyboardType="numeric"
+                                onChangeText={setCardNumber}
+                                autoFocus
                             />
-                            <TextField placeholder="CVV" value={cvv} onChangeText={setCvv} style={styles.fullWidth} />
+                        </TextField>
+                        <ThemedView style={styles.row}>
+                            <TextField style={styles.fullWidth}>
+                                <TextField.MaskedInput
+                                    mask="99/99"
+                                    placeholder="Data de validade"
+                                    keyboardType="numeric"
+                                    value={expirationDate}
+                                    onChangeText={setExpirationDate}
+                                />
+                            </TextField>
+                            <TextField style={styles.fullWidth}>
+                                <TextField.MaskedInput
+                                    mask="999"
+                                    placeholder="CVV"
+                                    keyboardType="numeric"
+                                    value={cvv}
+                                    onChangeText={setCvv}
+                                />
+                            </TextField>
                         </ThemedView>
-                        <TextField placeholder="Nome do titular" value={cardHolder} onChangeText={setCardHolder} />
-                        <TextField placeholder="Valor" value={amount} onChangeText={setAmount} />
+                        <TextField>
+                            <TextField.TextInput
+                                placeholder="Nome do titular"
+                                value={cardHolder}
+                                onChangeText={setCardHolder}
+                            />
+                        </TextField>
+                        <TextField>
+                            <TextField.CurrencyInput
+                                placeholder="Valor"
+                                value={amount}
+                                onChangeText={handleAmountChange}
+                            />
+                        </TextField>
                     </ThemedView>
                     <Button isLoading={isLoading} onPress={handlePayment}>
                         Pagar
