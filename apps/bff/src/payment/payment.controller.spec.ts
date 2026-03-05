@@ -5,14 +5,23 @@ import { PaymentRequest } from "./payment-request.dto";
 
 describe("PaymentController", () => {
     let controller: PaymentController;
+    const paymentServiceMock = {
+        executePayment: jest.fn(),
+    };
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             controllers: [PaymentController],
-            providers: [PaymentService],
+            providers: [
+                {
+                    provide: PaymentService,
+                    useValue: paymentServiceMock,
+                },
+            ],
         }).compile();
 
         controller = module.get<PaymentController>(PaymentController);
+        paymentServiceMock.executePayment.mockReset();
     });
 
     it("should be defined", () => {
@@ -28,9 +37,15 @@ describe("PaymentController", () => {
             amount: 100.0,
         };
 
+        paymentServiceMock.executePayment.mockResolvedValue({
+            status: "approved",
+            transactionId: "tx-123",
+        });
+
         const response = await controller.createPayment(paymentRequest);
         expect(response).toBeDefined();
         expect(response.status).toBeDefined();
         expect(response.transactionId).toBeDefined();
+        expect(paymentServiceMock.executePayment).toHaveBeenCalledWith(paymentRequest);
     });
 });

@@ -8,6 +8,6 @@ export class PaymentController {
 
     @Post()
     async createPayment(@Body() paymentRequest: PaymentRequest) {
-        return await this.paymentService.processPayment(paymentRequest);
+        return await this.paymentService.executePayment(paymentRequest);
     }
 }
