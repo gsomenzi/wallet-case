@@ -1,14 +1,24 @@
-import { View, type ViewProps } from "react-native";
+import { createBox } from "@shopify/restyle";
+import { type ComponentProps } from "react";
 
+import { type Theme } from "@/constants/theme";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
-export type ThemedViewProps = ViewProps & {
+const BaseView = createBox<Theme>();
+
+export type ThemedViewProps = ComponentProps<typeof BaseView> & {
     lightColor?: string;
     darkColor?: string;
 };
 
-export function ThemedView({ style, lightColor, darkColor, ...otherProps }: ThemedViewProps) {
-    const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, "background");
+export function ThemedView({ style, lightColor, darkColor, backgroundColor, ...otherProps }: ThemedViewProps) {
+    const resolvedBackgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, "background");
 
-    return <View style={[{ backgroundColor }, style]} {...otherProps} />;
+    return (
+        <BaseView
+            backgroundColor={backgroundColor}
+            style={[!backgroundColor && { backgroundColor: resolvedBackgroundColor }, style]}
+            {...otherProps}
+        />
+    );
 }

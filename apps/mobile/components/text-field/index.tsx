@@ -1,5 +1,4 @@
-import { ViewProps } from "react-native";
-import { ThemedView } from "../themed-view";
+import { ThemedView, ThemedViewProps } from "../themed-view";
 import { CurrencyInput } from "./components/currency-input";
 import { Feedback } from "./components/feedback";
 import { MaskedInput } from "./components/masked-input";
@@ -8,12 +7,14 @@ import { TextFieldContext } from "./context";
 
 type TextFieldProps = {
     error?: string | null;
-} & ViewProps;
+} & ThemedViewProps;
 
-function TextField({ children, error = null, style }: TextFieldProps) {
+function TextField({ children, error = null, style, ...props }: TextFieldProps) {
     return (
         <TextFieldContext.Provider value={{ error }}>
-            <ThemedView style={style}>{children}</ThemedView>
+            <ThemedView style={style} {...props}>
+                {children}
+            </ThemedView>
         </TextFieldContext.Provider>
     );
 }

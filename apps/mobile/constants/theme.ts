@@ -14,6 +14,7 @@ export const theme = createTheme({
         primary: "#007bff",
         secondary: "#6c757d",
         danger: "#721c24",
+        dangerBackground: "#f8d7da",
         white: "#fff",
         border: "#ccc",
         text: "#11181C",

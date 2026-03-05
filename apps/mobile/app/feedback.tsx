@@ -1,8 +1,10 @@
+import { useTheme } from "@shopify/restyle";
 import { useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
 import { StyleSheet } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { Theme } from "@/constants/theme";
 import { PaymentResponse } from "../features/payment/payment.entity";
 
 type ResponseInfoItem = {
@@ -11,6 +13,7 @@ type ResponseInfoItem = {
 };
 
 export default function FeedbackView() {
+    const appTheme = useTheme<Theme>();
     const { data } = useLocalSearchParams<{ data?: string | string[] }>();
 
     const paymentData = useMemo(() => {
@@ -53,20 +56,20 @@ export default function FeedbackView() {
     }, [paymentData, paymentStatusText]);
 
     return (
-        <ThemedView style={styles.view}>
-            <ThemedView style={styles.mainContent}>
+        <ThemedView flex={1}>
+            <ThemedView flex={1} padding="lg" justifyContent="center" alignItems="center" gap="lg">
                 <ThemedText textAlign="center" variant="subtitle">
                     Pagamento efetuado
                 </ThemedText>
                 {paymentData ? (
-                    <ThemedView style={styles.responseInfoList}>
+                    <ThemedView borderWidth={1} borderColor="border" borderRadius={appTheme.radii.md} overflow="hidden">
                         {responseInfoList.map((item, index) => (
                             <ThemedView
                                 key={item.title}
-                                style={[
-                                    styles.responseInfoItem,
-                                    index < responseInfoList.length - 1 && styles.responseInfoItemWithDivider,
-                                ]}
+                                padding="lg"
+                                style={
+                                    index < responseInfoList.length - 1 ? styles.responseInfoItemWithDivider : undefined
+                                }
                             >
                                 <ThemedText variant="defaultSemiBold">{item.title}</ThemedText>
                                 <ThemedText>{item.value}</ThemedText>
@@ -82,24 +85,6 @@ export default function FeedbackView() {
 }
 
 const styles = StyleSheet.create({
-    view: {
-        flex: 1,
-    },
-    mainContent: {
-        flex: 1,
-        padding: 24,
-        justifyContent: "center",
-        gap: 24,
-    },
-    responseInfoList: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        overflow: "hidden",
-    },
-    responseInfoItem: {
-        padding: 12,
-    },
     responseInfoItemWithDivider: {
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: "#ccc",

@@ -1,8 +1,9 @@
 import { useTheme } from "@shopify/restyle";
-import { ActivityIndicator, StyleSheet, TouchableOpacity } from "react-native";
+import { ActivityIndicator, TouchableOpacity } from "react-native";
 
 import { Theme } from "@/constants/theme";
 import { ThemedText } from "../themed-text";
+import { ThemedView } from "../themed-view";
 
 type ButtonProps = {
     children: React.ReactNode;
@@ -37,43 +38,29 @@ export function Button({ children, colorScheme = "primary", isLoading, onPress }
     }
 
     return (
-        <TouchableOpacity
-            style={[
-                styles.container,
-                {
-                    padding: appTheme.spacing.md,
-                    borderColor: appTheme.colors.border,
-                    borderRadius: appTheme.radii.md,
-                },
-                getColorSchemeStyles(),
-                { opacity: isLoading ? 0.7 : 1 },
-            ]}
-            onPress={handlePress}
-        >
-            {isLoading ? (
-                <ActivityIndicator
-                    size={20}
-                    style={{ display: isLoading ? "flex" : "none" }}
-                    color={appTheme.colors.white}
-                />
-            ) : typeof children === "string" ? (
-                <ThemedText variant="button" color="white">
-                    {children}
-                </ThemedText>
-            ) : (
-                children
-            )}
+        <TouchableOpacity onPress={handlePress}>
+            <ThemedView
+                borderWidth={1}
+                alignItems="center"
+                padding="md"
+                borderColor="border"
+                borderRadius={appTheme.radii.md}
+                style={[getColorSchemeStyles(), { opacity: isLoading ? 0.7 : 1 }]}
+            >
+                {isLoading ? (
+                    <ActivityIndicator
+                        size={20}
+                        style={{ display: isLoading ? "flex" : "none" }}
+                        color={appTheme.colors.white}
+                    />
+                ) : typeof children === "string" ? (
+                    <ThemedText variant="button" color="white">
+                        {children}
+                    </ThemedText>
+                ) : (
+                    children
+                )}
+            </ThemedView>
         </TouchableOpacity>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        borderWidth: 1,
-        alignItems: "center",
-    },
-    text: {
-        fontWeight: "bold",
-        lineHeight: 20,
-    },
-});
