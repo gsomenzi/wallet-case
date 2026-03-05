@@ -1,4 +1,8 @@
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { useTheme } from "@shopify/restyle";
+import { ActivityIndicator, StyleSheet, TouchableOpacity } from "react-native";
+
+import { Theme } from "@/constants/theme";
+import { ThemedText } from "../themed-text";
 
 type ButtonProps = {
     children: React.ReactNode;
@@ -8,6 +12,8 @@ type ButtonProps = {
 };
 
 export function Button({ children, colorScheme = "primary", isLoading, onPress }: ButtonProps) {
+    const appTheme = useTheme<Theme>();
+
     function handlePress() {
         if (isLoading) return;
         onPress?.();
@@ -16,9 +22,15 @@ export function Button({ children, colorScheme = "primary", isLoading, onPress }
     function getColorSchemeStyles() {
         switch (colorScheme) {
             case "primary":
-                return styles.primary;
+                return {
+                    backgroundColor: appTheme.colors.primary,
+                    borderColor: appTheme.colors.primary,
+                };
             case "secondary":
-                return styles.secondary;
+                return {
+                    backgroundColor: appTheme.colors.secondary,
+                    borderColor: appTheme.colors.secondary,
+                };
             default:
                 return {};
         }
@@ -26,13 +38,28 @@ export function Button({ children, colorScheme = "primary", isLoading, onPress }
 
     return (
         <TouchableOpacity
-            style={[styles.container, getColorSchemeStyles(), { opacity: isLoading ? 0.7 : 1 }]}
+            style={[
+                styles.container,
+                {
+                    padding: appTheme.spacing.md,
+                    borderColor: appTheme.colors.border,
+                    borderRadius: appTheme.radii.md,
+                },
+                getColorSchemeStyles(),
+                { opacity: isLoading ? 0.7 : 1 },
+            ]}
             onPress={handlePress}
         >
             {isLoading ? (
-                <ActivityIndicator size={20} style={{ display: isLoading ? "flex" : "none" }} color="#fff" />
+                <ActivityIndicator
+                    size={20}
+                    style={{ display: isLoading ? "flex" : "none" }}
+                    color={appTheme.colors.white}
+                />
             ) : typeof children === "string" ? (
-                <Text style={styles.text}>{children}</Text>
+                <ThemedText variant="button" color="white">
+                    {children}
+                </ThemedText>
             ) : (
                 children
             )}
@@ -42,22 +69,10 @@ export function Button({ children, colorScheme = "primary", isLoading, onPress }
 
 const styles = StyleSheet.create({
     container: {
-        padding: 12,
         borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
         alignItems: "center",
     },
-    primary: {
-        backgroundColor: "#007bff",
-        borderColor: "#007bff",
-    },
-    secondary: {
-        backgroundColor: "#6c757d",
-        borderColor: "#6c757d",
-    },
     text: {
-        color: "#fff",
         fontWeight: "bold",
         lineHeight: 20,
     },

@@ -3,10 +3,67 @@
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
 
+import { createTheme } from "@shopify/restyle";
 import { Platform } from "react-native";
 
 const tintColorLight = "#0a7ea4";
 const tintColorDark = "#fff";
+
+export const theme = createTheme({
+    colors: {
+        primary: "#007bff",
+        secondary: "#6c757d",
+        danger: "#721c24",
+        white: "#fff",
+        border: "#ccc",
+        text: "#11181C",
+        background: "#fff",
+    },
+    spacing: {
+        xs: 4,
+        sm: 8,
+        md: 12,
+        lg: 16,
+        xl: 24,
+    },
+    radii: {
+        sm: 4,
+        md: 8,
+        lg: 16,
+        xl: 24,
+    },
+    textVariants: {
+        default: {
+            fontSize: 16,
+            lineHeight: 24,
+        },
+        defaultSemiBold: {
+            fontSize: 16,
+            lineHeight: 24,
+            fontWeight: "600",
+        },
+        title: {
+            fontSize: 32,
+            fontWeight: "bold",
+            lineHeight: 32,
+        },
+        subtitle: {
+            fontSize: 20,
+            fontWeight: "bold",
+        },
+        link: {
+            lineHeight: 30,
+            fontSize: 16,
+            color: "primary",
+        },
+        button: {
+            fontSize: 16,
+            fontWeight: "bold",
+        },
+    },
+});
+
+export type Theme = typeof theme;
 
 export const Colors = {
     light: {

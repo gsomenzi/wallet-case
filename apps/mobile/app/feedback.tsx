@@ -55,7 +55,7 @@ export default function FeedbackView() {
     return (
         <ThemedView style={styles.view}>
             <ThemedView style={styles.mainContent}>
-                <ThemedText textAlign="center" type="subtitle">
+                <ThemedText textAlign="center" variant="subtitle">
                     Pagamento efetuado
                 </ThemedText>
                 {paymentData ? (
@@ -68,7 +68,7 @@ export default function FeedbackView() {
                                     index < responseInfoList.length - 1 && styles.responseInfoItemWithDivider,
                                 ]}
                             >
-                                <ThemedText type="defaultSemiBold">{item.title}</ThemedText>
+                                <ThemedText variant="defaultSemiBold">{item.title}</ThemedText>
                                 <ThemedText>{item.value}</ThemedText>
                             </ThemedView>
                         ))}

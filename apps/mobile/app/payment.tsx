@@ -95,7 +95,7 @@ export default function PaymentView() {
         <ThemedView style={styles.view}>
             <Pressable style={styles.view} onPress={Keyboard.dismiss}>
                 <ThemedView style={styles.mainContent}>
-                    <ThemedText textAlign="center" type="subtitle">
+                    <ThemedText textAlign="center" variant="subtitle">
                         Pagamento
                     </ThemedText>
                     <ThemedView style={styles.form}>

@@ -1,8 +1,10 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { ThemeProvider as RestyleThemeProvider } from "@shopify/restyle";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
+import { theme } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function RootLayout() {
@@ -10,11 +12,13 @@ export default function RootLayout() {
 
     return (
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-            <Stack>
-                <Stack.Screen name="payment" options={{ headerShown: false }} />
-                <Stack.Screen name="feedback" options={{ title: "Feedback", headerBackTitle: "Voltar" }} />
-            </Stack>
-            <StatusBar style="auto" />
+            <RestyleThemeProvider theme={theme}>
+                <Stack>
+                    <Stack.Screen name="payment" options={{ headerShown: false }} />
+                    <Stack.Screen name="feedback" options={{ title: "Feedback", headerBackTitle: "Voltar" }} />
+                </Stack>
+                <StatusBar style="auto" />
+            </RestyleThemeProvider>
         </ThemeProvider>
     );
 }

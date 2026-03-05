@@ -1,62 +1,38 @@
-import { StyleSheet, Text, type TextProps } from "react-native";
+import { createText, useTheme } from "@shopify/restyle";
+import { type ComponentProps } from "react";
 
+import { type Theme } from "@/constants/theme";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
-export type ThemedTextProps = TextProps & {
+const BaseText = createText<Theme>();
+
+type TextVariant = keyof Theme["textVariants"];
+
+export type ThemedTextProps = ComponentProps<typeof BaseText> & {
     textAlign?: "auto" | "left" | "right" | "center" | "justify";
     lightColor?: string;
     darkColor?: string;
-    type?: "default" | "title" | "defaultSemiBold" | "subtitle" | "link";
 };
 
 export function ThemedText({
     style,
     lightColor,
     darkColor,
-    type = "default",
+    variant = "default" as TextVariant,
     textAlign = "left",
     ...rest
 }: ThemedTextProps) {
+    const appTheme = useTheme<Theme>();
     const color = useThemeColor({ light: lightColor, dark: darkColor }, "text");
+    const hasCustomColor = lightColor !== undefined || darkColor !== undefined;
+    const hasRestyleColor = rest.color !== undefined;
+    const resolvedColor = hasCustomColor ? color : variant === "link" ? appTheme.colors.primary : color;
 
     return (
-        <Text
-            style={[
-                { color, textAlign },
-                type === "default" ? styles.default : undefined,
-                type === "title" ? styles.title : undefined,
-                type === "defaultSemiBold" ? styles.defaultSemiBold : undefined,
-                type === "subtitle" ? styles.subtitle : undefined,
-                type === "link" ? styles.link : undefined,
-                style,
-            ]}
+        <BaseText
+            variant={variant}
+            style={[!hasRestyleColor && { color: resolvedColor }, { textAlign }, style]}
             {...rest}
         />
     );
 }
-
-const styles = StyleSheet.create({
-    default: {
-        fontSize: 16,
-        lineHeight: 24,
-    },
-    defaultSemiBold: {
-        fontSize: 16,
-        lineHeight: 24,
-        fontWeight: "600",
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: "bold",
-        lineHeight: 32,
-    },
-    subtitle: {
-        fontSize: 20,
-        fontWeight: "bold",
-    },
-    link: {
-        lineHeight: 30,
-        fontSize: 16,
-        color: "#0a7ea4",
-    },
-});
