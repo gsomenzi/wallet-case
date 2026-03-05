@@ -1,27 +1,26 @@
-import { StyleSheet, ViewProps } from "react-native";
+import { ViewProps } from "react-native";
 import { ThemedView } from "../themed-view";
 import { CurrencyInput } from "./components/currency-input";
+import { Feedback } from "./components/feedback";
 import { MaskedInput } from "./components/masked-input";
 import { TextInput } from "./components/text-input";
+import { TextFieldContext } from "./context";
 
 type TextFieldProps = {
-    children: React.ReactNode;
+    error?: string | null;
 } & ViewProps;
 
-function TextField({ children, style }: TextFieldProps) {
-    return <ThemedView style={[styles.container, style]}>{children}</ThemedView>;
+function TextField({ children, error = null, style }: TextFieldProps) {
+    return (
+        <TextFieldContext.Provider value={{ error }}>
+            <ThemedView style={style}>{children}</ThemedView>
+        </TextFieldContext.Provider>
+    );
 }
 
 TextField.TextInput = TextInput;
 TextField.MaskedInput = MaskedInput;
 TextField.CurrencyInput = CurrencyInput;
+TextField.Feedback = Feedback;
 
 export { TextField };
-
-const styles = StyleSheet.create({
-    container: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-    },
-});

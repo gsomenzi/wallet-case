@@ -1,8 +1,11 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import Constants from "expo-constants";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { Keyboard, Pressable, StyleSheet } from "react-native";
+import { z } from "zod";
 import { Button } from "@/components/button";
 import { TextField } from "@/components/text-field";
 import { ThemedText } from "@/components/themed-text";
@@ -16,41 +19,52 @@ const apiClient = axios.create({
     timeout: 6000,
 });
 
+const paymentFormSchema = z.object({
+    cardNumber: z.string().trim().min(1, "Campo obrigatório"),
+    cardHolder: z.string().trim().min(1, "Campo obrigatório"),
+    expirationDate: z.string().trim().min(1, "Campo obrigatório"),
+    cvv: z.string().trim().min(1, "Campo obrigatório"),
+    amount: z.string().trim().min(1, "Campo obrigatório"),
+});
+
+type PaymentFormData = z.infer<typeof paymentFormSchema>;
+
+const defaultValues: PaymentFormData = {
+    cardNumber: "",
+    cardHolder: "",
+    expirationDate: "",
+    cvv: "",
+    amount: "",
+};
+
 export default function PaymentView() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<{ title: string; message: string } | null>(null);
-    const [cardNumber, setCardNumber] = useState("");
-    const [cardHolder, setCardHolder] = useState("");
-    const [expirationDate, setExpirationDate] = useState("");
-    const [cvv, setCvv] = useState("");
-    const [amount, setAmount] = useState("");
+
+    const {
+        control,
+        formState: { errors },
+        handleSubmit,
+        reset,
+    } = useForm<PaymentFormData>({
+        resolver: zodResolver(paymentFormSchema),
+        defaultValues,
+    });
 
     const cleanForm = useCallback(() => {
-        setCardNumber("");
-        setCardHolder("");
-        setExpirationDate("");
-        setCvv("");
-        setAmount("");
-    }, []);
+        reset(defaultValues);
+    }, [reset]);
 
-    const handleAmountChange = useCallback((_: string, rawText?: string) => {
-        if (!rawText || rawText === "NaN") {
-            setAmount("");
-            return;
-        }
-        setAmount(rawText);
-    }, []);
-
-    async function handlePayment() {
+    async function handlePayment(data: PaymentFormData) {
         try {
             setIsLoading(true);
             setError(null);
             const response = await apiClient.post<PaymentResponse>("/payments", {
-                cardNumber,
-                cardHolder,
-                expirationDate,
-                cvv,
-                amount,
+                cardNumber: data.cardNumber,
+                cardHolder: data.cardHolder,
+                expirationDate: data.expirationDate,
+                cvv: data.cvv,
+                amount: data.amount,
             });
             router.push({
                 pathname: "/feedback",
@@ -59,11 +73,16 @@ export default function PaymentView() {
                 },
             });
             console.log("Payment response:", response.data);
-        } catch (error: unknown) {
-            console.error("Payment error:", error);
+        } catch (caughtError: unknown) {
+            console.error("Payment error:", caughtError);
+            const message =
+                axios.isAxiosError<{ message?: string }>(caughtError) && caughtError.response?.data?.message
+                    ? caughtError.response.data.message
+                    : "Por favor, tente novamente mais tarde.";
+
             setError({
                 title: "Falha ao processar o pagamento.",
-                message: (error as any)?.response?.data?.message || "Por favor, tente novamente mais tarde.",
+                message,
             });
         } finally {
             setIsLoading(false);
@@ -80,52 +99,89 @@ export default function PaymentView() {
                         Pagamento
                     </ThemedText>
                     <ThemedView style={styles.form}>
-                        <TextField>
-                            <TextField.MaskedInput
-                                mask="9999 9999 9999 9999"
-                                placeholder="Número do cartão"
-                                value={cardNumber}
-                                keyboardType="numeric"
-                                onChangeText={setCardNumber}
-                                autoFocus
+                        <TextField error={errors.cardNumber?.message}>
+                            <Controller
+                                control={control}
+                                name="cardNumber"
+                                render={({ field: { onChange, value } }) => (
+                                    <TextField.MaskedInput
+                                        mask="9999 9999 9999 9999"
+                                        placeholder="Número do cartão"
+                                        value={value}
+                                        keyboardType="numeric"
+                                        onChangeText={onChange}
+                                        autoFocus
+                                    />
+                                )}
                             />
+                            <TextField.Feedback />
                         </TextField>
                         <ThemedView style={styles.row}>
-                            <TextField style={styles.fullWidth}>
-                                <TextField.MaskedInput
-                                    mask="99/99"
-                                    placeholder="Data de validade"
-                                    keyboardType="numeric"
-                                    value={expirationDate}
-                                    onChangeText={setExpirationDate}
+                            <TextField style={styles.fullWidth} error={errors.expirationDate?.message}>
+                                <Controller
+                                    control={control}
+                                    name="expirationDate"
+                                    render={({ field: { onChange, value } }) => (
+                                        <TextField.MaskedInput
+                                            mask="99/99"
+                                            placeholder="Data de validade"
+                                            keyboardType="numeric"
+                                            value={value}
+                                            onChangeText={onChange}
+                                        />
+                                    )}
                                 />
+                                <TextField.Feedback />
                             </TextField>
-                            <TextField style={styles.fullWidth}>
-                                <TextField.MaskedInput
-                                    mask="999"
-                                    placeholder="CVV"
-                                    keyboardType="numeric"
-                                    value={cvv}
-                                    onChangeText={setCvv}
+                            <TextField style={styles.fullWidth} error={errors.cvv?.message}>
+                                <Controller
+                                    control={control}
+                                    name="cvv"
+                                    render={({ field: { onChange, value } }) => (
+                                        <TextField.MaskedInput
+                                            mask="999"
+                                            placeholder="CVV"
+                                            keyboardType="numeric"
+                                            value={value}
+                                            onChangeText={onChange}
+                                        />
+                                    )}
                                 />
+                                <TextField.Feedback />
                             </TextField>
                         </ThemedView>
-                        <TextField>
-                            <TextField.TextInput
-                                placeholder="Nome do titular"
-                                value={cardHolder}
-                                onChangeText={setCardHolder}
+                        <TextField error={errors.cardHolder?.message}>
+                            <Controller
+                                control={control}
+                                name="cardHolder"
+                                render={({ field: { onChange, value } }) => (
+                                    <TextField.TextInput
+                                        placeholder="Nome do titular"
+                                        value={value}
+                                        onChangeText={onChange}
+                                    />
+                                )}
                             />
+                            <TextField.Feedback />
                         </TextField>
-                        <TextField>
-                            <TextField.CurrencyInput
-                                placeholder="Valor"
-                                value={amount}
-                                onChangeText={handleAmountChange}
+                        <TextField error={errors.amount?.message}>
+                            <Controller
+                                control={control}
+                                name="amount"
+                                render={({ field: { onChange, value } }) => (
+                                    <TextField.CurrencyInput
+                                        placeholder="Valor"
+                                        value={value}
+                                        onChangeText={(_, rawText) =>
+                                            onChange(rawText && rawText !== "NaN" ? rawText : "")
+                                        }
+                                    />
+                                )}
                             />
+                            <TextField.Feedback />
                         </TextField>
                     </ThemedView>
-                    <Button isLoading={isLoading} onPress={handlePayment}>
+                    <Button isLoading={isLoading} onPress={handleSubmit(handlePayment)}>
                         Pagar
                     </Button>
                     {error && (

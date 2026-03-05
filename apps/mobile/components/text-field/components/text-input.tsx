@@ -13,6 +13,9 @@ export function TextInput({ lightColor, darkColor, style, ...props }: TextInputP
 
 const styles = StyleSheet.create({
     input: {
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 8,
         paddingHorizontal: 8,
         paddingVertical: 12,
     },
