@@ -1,0 +1,54 @@
+receivers:
+  # Recebe traces/métricas/logs via OTLP (HTTP porta 4318 e gRPC porta 4317)
+  otlp:
+    protocols:
+      http:
+        endpoint: "0.0.0.0:4318"
+      grpc:
+        endpoint: "0.0.0.0:4317"
+
+processors:
+  # Agrupa dados em lotes para envio eficiente
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  # Envia traces para o Tempo via OTLP gRPC (rede interna do Docker)
+  otlp/tempo:
+    endpoint: "tempo:4317"
+    tls:
+      insecure: true
+
+  # Envia logs para o Loki via API HTTP (rede interna do Docker)
+  loki:
+    endpoint: "http://loki:3100/loki/api/v1/push"
+
+  # Exporter de debug — imprime dados no log do collector (útil em desenvolvimento)
+  debug:
+    verbosity: detailed
+
+extensions:
+  health_check:
+    endpoint: "0.0.0.0:13133"
+
+service:
+  extensions: [health_check]
+  pipelines:
+    # Pipeline de traces: recebe via OTLP → processa → envia ao Tempo
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/tempo, debug]
+
+    # Pipeline de métricas: recebe via OTLP → processa → log de debug
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+
+    # Pipeline de logs: recebe via OTLP → processa → envia ao Loki
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [loki, debug]
