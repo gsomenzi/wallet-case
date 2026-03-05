@@ -1,6 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import Constants from "expo-constants";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -11,14 +10,7 @@ import { ErrorMessage } from "@/components/error-message";
 import { TextField } from "@/components/text-field";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { PaymentResponse } from "../features/payment/payment.entity";
-
-const apiUrl = Constants.expoConfig?.extra?.apiUrl;
-
-const apiClient = axios.create({
-    baseURL: typeof apiUrl === "string" ? apiUrl : undefined,
-    timeout: 6000,
-});
+import { PaymentService } from "@/features/payment/payment.service";
 
 const paymentFormSchema = z.object({
     cardNumber: z.string().trim().min(1, "Campo obrigatório"),
@@ -41,6 +33,7 @@ const defaultValues: PaymentFormData = {
 export default function PaymentView() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<{ title: string; message: string } | null>(null);
+    const paymentService = new PaymentService();
 
     const {
         control,
@@ -60,7 +53,8 @@ export default function PaymentView() {
         try {
             setIsLoading(true);
             setError(null);
-            const response = await apiClient.post<PaymentResponse>("/payments", {
+
+            const response = await paymentService.processPayment({
                 cardNumber: data.cardNumber,
                 cardHolder: data.cardHolder,
                 expirationDate: data.expirationDate,
@@ -70,12 +64,10 @@ export default function PaymentView() {
             router.push({
                 pathname: "/feedback",
                 params: {
-                    data: JSON.stringify(response.data),
+                    data: JSON.stringify(response),
                 },
             });
-            console.log("Payment response:", response.data);
         } catch (caughtError: unknown) {
-            console.error("Payment error:", caughtError);
             const message =
                 axios.isAxiosError<{ message?: string }>(caughtError) && caughtError.response?.data?.message
                     ? caughtError.response.data.message

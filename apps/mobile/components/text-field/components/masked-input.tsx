@@ -7,9 +7,23 @@ type InputProps = MaskedTextInputProps & {
     darkColor?: string;
 };
 
-export function MaskedInput({ lightColor, darkColor, style, ...props }: InputProps) {
+export function MaskedInput({ lightColor, darkColor, style, value, onChangeText, ...props }: InputProps) {
     const color = useThemeColor({ light: lightColor, dark: darkColor }, "text");
-    return <MaskedTextInput style={[styles.input, { color }, style]} {...props} />;
+    const normalizedValue = typeof value === "string" && value.trim().length === 0 ? undefined : value;
+
+    function handleChangeText(text: string, rawText: string) {
+        const normalizedRawText = rawText === "NaN" ? "" : rawText;
+        onChangeText?.(text, normalizedRawText);
+    }
+
+    return (
+        <MaskedTextInput
+            style={[styles.input, { color }, style]}
+            value={normalizedValue}
+            onChangeText={handleChangeText}
+            {...props}
+        />
+    );
 }
 
 const styles = StyleSheet.create({
