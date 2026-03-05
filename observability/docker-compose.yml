@@ -11,7 +11,6 @@ volumes:
   tempo-data:
 
 services:
-  # ─── Grafana ─────────────────────────────────────────────────────────────────
   grafana:
     image: grafana/grafana:11.2.0
     container_name: obs-grafana
@@ -28,7 +27,11 @@ services:
     networks:
       - observability
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -41,7 +44,6 @@ services:
       tempo:
         condition: service_healthy
 
-  # ─── Prometheus ──────────────────────────────────────────────────────────────
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: obs-prometheus
@@ -55,16 +57,20 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--web.enable-lifecycle"
+      - "--web.enable-remote-write-receiver"
     networks:
       - observability
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
 
-  # ─── Loki ────────────────────────────────────────────────────────────────────
   loki:
     image: grafana/loki:3.1.1
     container_name: obs-loki
@@ -78,21 +84,22 @@ services:
     networks:
       - observability
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 20s
 
-  # ─── Tempo ───────────────────────────────────────────────────────────────────
   tempo:
     image: grafana/tempo:2.5.0
     container_name: obs-tempo
     restart: unless-stopped
     ports:
-      - "3200:3200"   # Tempo HTTP API / query frontend
-      # Port 4317 (OTLP gRPC) is kept internal; otel-collector reaches it via the
-      # Docker network using the service name "tempo:4317".
+      - "3200:3200"
     volumes:
       - ./tempo-config.yml:/etc/tempo/tempo.yaml:ro
       - tempo-data:/var/tempo
@@ -100,21 +107,24 @@ services:
     networks:
       - observability
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3200/ready || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:3200/ready || exit 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 20s
 
-  # ─── OpenTelemetry Collector ─────────────────────────────────────────────────
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.107.0
     container_name: obs-otel-collector
     restart: unless-stopped
     ports:
-      - "4317:4317"   # OTLP gRPC receiver (exposed to host)
-      - "4318:4318"   # OTLP HTTP receiver (exposed to host)
-      - "8888:8888"   # Collector own metrics (Prometheus)
+      - "4317:4317"
+      - "4318:4318"
+      - "8888:8888"
     volumes:
       - ./otel-collector-config.yml:/etc/otelcol-contrib/config.yaml:ro
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
@@ -126,29 +136,12 @@ services:
       loki:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:13133/ || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:13133/ || exit 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 15s
-
-  # ─── Promtail (log shipper — pronto para uso futuro) ──────────────────────────
-  # Promtail está configurado para coletar logs de containers Docker.
-  # Enquanto o BFF rodar via `npm run dev:bff` (fora do Docker), esta coleta
-  # não terá efeito, mas o serviço já estará pronto quando o BFF for containerizado.
-  # Para desabilitar temporariamente, comente/remova o serviço abaixo.
-  promtail:
-    image: grafana/promtail:3.1.1
-    container_name: obs-promtail
-    restart: unless-stopped
-    volumes:
-      - ./promtail-config.yml:/etc/promtail/config.yml:ro
-      - /var/log:/var/log:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: -config.file=/etc/promtail/config.yml
-    networks:
-      - observability
-    depends_on:
-      loki:
-        condition: service_healthy

@@ -3,22 +3,10 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  # Prometheus auto-scrape de suas próprias métricas
   - job_name: "prometheus"
     static_configs:
       - targets: ["localhost:9090"]
 
-  # BFF — o endpoint /metrics será exposto pelo desenvolvedor após instrumentação.
-  # No macOS e Windows, `host.docker.internal` resolve o endereço do host.
-  # No Linux, substitua por `172.17.0.1` ou pelo IP do host na bridge (ex: `172.17.0.1`),
-  # ou utilize `extra_hosts: ["host.docker.internal:host-gateway"]` no docker-compose.
-  - job_name: "bff"
-    static_configs:
-      - targets: ["host.docker.internal:3000"]
-    metrics_path: /metrics
-    scheme: http
-
-  # OTel Collector — métricas internas do próprio collector
   - job_name: "otel-collector"
     static_configs:
       - targets: ["otel-collector:8888"]

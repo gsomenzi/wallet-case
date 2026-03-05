@@ -19,9 +19,7 @@ common:
 
 schema_config:
   configs:
-    # A data abaixo indica a partir de quando este schema é aplicado.
-    # Pode ser qualquer data no passado — indica apenas o início da configuração.
-    - from: 2024-01-01
+    - from: 2026-03-05
       store: tsdb
       object_store: filesystem
       schema: v13
