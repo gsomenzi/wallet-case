@@ -8,15 +8,10 @@ const MAX_DELAY_MS = 1500;
 
 @Injectable()
 export class MockAntiFraudValidator implements AntiFraudValidator {
-    delaySimulator: DelaySimulator;
-    booleanRandomizer: BooleanRandomizer;
     constructor(
-        @Inject(BooleanRandomizer) booleanRandomizer: BooleanRandomizer,
-        @Inject(DelaySimulator) delaySimulator: DelaySimulator
-    ) {
-        this.booleanRandomizer = booleanRandomizer;
-        this.delaySimulator = delaySimulator;
-    }
+        @Inject(BooleanRandomizer) private readonly booleanRandomizer: BooleanRandomizer,
+        @Inject(DelaySimulator) private readonly delaySimulator: DelaySimulator
+    ) {}
 
     async validate(): Promise<boolean> {
         await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);

@@ -8,15 +8,10 @@ const MAX_DELAY_MS = 2500;
 
 @Injectable()
 export class MockAcquirerProcessor implements AcquirerProcessor {
-    delaySimulator: DelaySimulator;
-    booleanRandomizer: BooleanRandomizer;
     constructor(
-        @Inject(BooleanRandomizer) booleanRandomizer: BooleanRandomizer,
-        @Inject(DelaySimulator) delaySimulator: DelaySimulator
-    ) {
-        this.booleanRandomizer = booleanRandomizer;
-        this.delaySimulator = delaySimulator;
-    }
+        @Inject(BooleanRandomizer) private readonly booleanRandomizer: BooleanRandomizer,
+        @Inject(DelaySimulator) private readonly delaySimulator: DelaySimulator
+    ) {}
 
     async process(): Promise<boolean> {
         await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
