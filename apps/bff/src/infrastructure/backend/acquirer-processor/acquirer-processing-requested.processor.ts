@@ -5,7 +5,7 @@ import {
     PaymentWorkflowEvent,
     type PaymentWorkflowEventPayload,
 } from "../../../features/payment/payment-workflow.events";
-import { PaymentWorkflowCoordinator } from "../payment-workflow-coordinator.service";
+import { PaymentWorkflowCoordinator } from "../payment-workflow/payment-workflow-coordinator.service";
 import { AcquirerProcessor, type AcquirerProcessor as AcquirerProcessorType } from "./acquirer-processor.interface";
 
 @Injectable()

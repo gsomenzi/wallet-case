@@ -19,7 +19,8 @@ import { MockPaymentProcessor } from "./payment-processor/implementations/mock-p
 import { PaymentProcessingRequestedProcessor } from "./payment-processor/payment-processing-requested.processor";
 import { PaymentProcessor } from "./payment-processor/payment-processor.interface";
 import { PaymentStartedProcessor } from "./payment-started.processor";
-import { PaymentWorkflowCoordinator } from "./payment-workflow-coordinator.service";
+import { PaymentStepExecutor } from "./payment-workflow/payment-step-executor";
+import { PaymentWorkflowCoordinator } from "./payment-workflow/payment-workflow-coordinator.service";
 
 @Module({
     imports: [PersistenceModule],
@@ -48,6 +49,7 @@ import { PaymentWorkflowCoordinator } from "./payment-workflow-coordinator.servi
             provide: PaymentProcessor,
             useClass: MockPaymentProcessor,
         },
+        PaymentStepExecutor,
         PaymentWorkflowCoordinator,
         PaymentStartedProcessor,
         AccountValidationRequestedProcessor,

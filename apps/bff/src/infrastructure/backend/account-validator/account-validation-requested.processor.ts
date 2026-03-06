@@ -5,7 +5,7 @@ import {
     PaymentWorkflowEvent,
     type PaymentWorkflowEventPayload,
 } from "../../../features/payment/payment-workflow.events";
-import { PaymentWorkflowCoordinator } from "../payment-workflow-coordinator.service";
+import { PaymentWorkflowCoordinator } from "../payment-workflow/payment-workflow-coordinator.service";
 import { AccountValidator, type AccountValidator as AccountValidatorType } from "./account-validator.interface";
 
 @Injectable()

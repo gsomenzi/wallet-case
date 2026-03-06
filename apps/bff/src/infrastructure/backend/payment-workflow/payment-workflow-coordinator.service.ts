@@ -1,15 +1,19 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { ApplicationError } from "../../application/application-error";
-import { type PaymentResponse, PaymentStatus, type StepResponse } from "../../features/payment/payment-response.entity";
+import { type PaymentResponse, PaymentStatus } from "../../../features/payment/payment-response.entity";
 import {
     type PaymentUpdatedEventPayload,
     PaymentWorkflowEvent,
     type PaymentWorkflowEventPayload,
-} from "../../features/payment/payment-workflow.events";
-import { MetricRecorder } from "../observability/metric-recorder/metric-recorder.interface";
-import { TraceInstrumenter } from "../observability/trace-instrumenter/trace-instrumenter.interface";
-import { PaymentStorage } from "../persistence/payment-storage/payment-storage.interface";
+} from "../../../features/payment/payment-workflow.events";
+import { MetricRecorder } from "../../observability/metric-recorder/metric-recorder.interface";
+import { TraceInstrumenter } from "../../observability/trace-instrumenter/trace-instrumenter.interface";
+import { PaymentStorage } from "../../persistence/payment-storage/payment-storage.interface";
+import { PaymentStepExecutor, type RetryPolicy } from "./payment-step-executor";
+import { applyWorkflowFailure } from "./payment-workflow-failure";
+import { hasStepAlreadyExecuted, isTerminalStatus } from "./payment-workflow-guards";
+
+type ExecuteStepFailureBehavior = "fail-payment" | "continue";
 
 type ExecuteStepInput = {
     event: PaymentWorkflowEventPayload;
@@ -17,6 +21,8 @@ type ExecuteStepInput = {
     statusInProgress: PaymentStatus;
     action: () => Promise<unknown>;
     nextEvent?: PaymentWorkflowEvent;
+    retryPolicy?: Partial<RetryPolicy>;
+    failureBehavior?: ExecuteStepFailureBehavior;
 };
 
 @Injectable()
@@ -25,6 +31,7 @@ export class PaymentWorkflowCoordinator {
         @Inject(PaymentStorage) private readonly paymentStorage: PaymentStorage,
         @Inject(TraceInstrumenter) private readonly traceInstrumenter: TraceInstrumenter,
         @Inject(MetricRecorder) private readonly metricRecorder: MetricRecorder,
+        private readonly paymentStepExecutor: PaymentStepExecutor,
         private readonly eventEmitter: EventEmitter2
     ) {}
 
@@ -39,14 +46,35 @@ export class PaymentWorkflowCoordinator {
             async () => {
                 const payment = await this.paymentStorage.findByTransactionId(input.event.transactionId);
                 if (!payment) return;
-                const { transactionId, totalTimeMs } = payment;
+                const { transactionId } = payment;
+
+                if (isTerminalStatus(payment.status)) {
+                    return;
+                }
+
+                if (hasStepAlreadyExecuted(payment, step)) {
+                    if (input.nextEvent) {
+                        this.eventEmitter.emit(input.nextEvent, {
+                            transactionId,
+                        } satisfies PaymentWorkflowEventPayload);
+                    }
+                    this.metricRecorder.incrementCounter("payment_step_skipped_total", 1, {
+                        step,
+                        reason: "already_completed",
+                    });
+                    return;
+                }
 
                 try {
                     payment.updateStatus(statusInProgress);
                     await this.paymentStorage.save(payment);
                     this.publishPaymentUpdated(transactionId, payment);
 
-                    const stepResponse = await this.runStep(step, action);
+                    const stepResponse = await this.paymentStepExecutor.executeWithResilience({
+                        step,
+                        action,
+                        retryPolicy: input.retryPolicy,
+                    });
                     payment.addStep(stepResponse);
 
                     await this.paymentStorage.save(payment);
@@ -58,24 +86,18 @@ export class PaymentWorkflowCoordinator {
                         } satisfies PaymentWorkflowEventPayload);
                     }
                 } catch (error) {
-                    if (error instanceof ApplicationError) {
-                        payment.decline({
-                            code: error.code,
-                            message: error.message,
-                            details: error.details,
+                    if (input.failureBehavior === "continue") {
+                        this.metricRecorder.incrementCounter("payment_step_non_blocking_failure_total", 1, {
+                            step,
                         });
-                    } else {
-                        payment.error({
-                            code: "UNKNOWN_APPLICATION_ERROR",
-                            message: error instanceof Error ? error.message : "Erro inesperado ao processar pagamento",
-                        });
+                        return;
                     }
+
+                    const outcome = applyWorkflowFailure(payment, error);
                     await this.paymentStorage.save(payment);
                     this.publishPaymentUpdated(transactionId, payment);
 
-                    const outcome = payment.status === PaymentStatus.Declined ? "declined" : "error";
-
-                    this.metricRecorder.recordHistogram("payment_execution_duration_ms", totalTimeMs, {
+                    this.metricRecorder.recordHistogram("payment_execution_duration_ms", payment.totalTimeMs, {
                         action: "payment_execution",
                         outcome,
                     });
@@ -102,28 +124,6 @@ export class PaymentWorkflowCoordinator {
         this.metricRecorder.incrementCounter("payment_total", 1, {
             outcome: "success",
         });
-    }
-
-    private async runStep(step: string, action: () => Promise<unknown>): Promise<StepResponse> {
-        const startedAt = Date.now();
-        let outcome: "success" | "error" = "success";
-        try {
-            await action();
-            return { step, timeMs: Date.now() - startedAt };
-        } catch (error) {
-            outcome = "error";
-            throw error;
-        } finally {
-            const durationMs = Date.now() - startedAt;
-            this.metricRecorder.recordHistogram("payment_step_duration_ms", durationMs, {
-                step,
-                outcome,
-            });
-            this.metricRecorder.incrementCounter("payment_step_total", 1, {
-                step,
-                outcome,
-            });
-        }
     }
 
     private publishPaymentUpdated(transactionId: string, payment: PaymentResponse): void {

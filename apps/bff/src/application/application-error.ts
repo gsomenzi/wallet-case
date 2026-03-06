@@ -12,17 +12,19 @@ export type ApplicationErrorCode =
 export abstract class ApplicationError extends Error {
     readonly code: ApplicationErrorCode;
     readonly details?: Record<string, unknown>;
+    readonly retryable: boolean;
 
     protected constructor(
         message: string,
         code: ApplicationErrorCode,
         details?: Record<string, unknown>,
-        options?: { cause?: unknown }
+        options?: { cause?: unknown; retryable?: boolean }
     ) {
         super(message);
         this.name = new.target.name;
         this.code = code;
         this.details = details;
+        this.retryable = options?.retryable ?? false;
         if (options?.cause) {
             (this as Error & { cause?: unknown }).cause = options.cause;
         }

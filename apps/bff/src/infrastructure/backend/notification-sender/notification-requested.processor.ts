@@ -5,7 +5,7 @@ import {
     PaymentWorkflowEvent,
     type PaymentWorkflowEventPayload,
 } from "../../../features/payment/payment-workflow.events";
-import { PaymentWorkflowCoordinator } from "../payment-workflow-coordinator.service";
+import { PaymentWorkflowCoordinator } from "../payment-workflow/payment-workflow-coordinator.service";
 import { NotificationSender, type NotificationSender as NotificationSenderType } from "./notification-sender.interface";
 
 @Injectable()
@@ -22,6 +22,14 @@ export class NotificationRequestedProcessor {
             step: "notification",
             statusInProgress: PaymentStatus.SendingNotification,
             action: () => this.notificationSender.send(),
+            failureBehavior: "continue",
+            retryPolicy: {
+                maxAttempts: 3,
+                initialDelayMs: 100,
+                backoffFactor: 2,
+                jitterMs: 80,
+                timeoutMs: 2500,
+            },
         });
 
         await this.paymentWorkflowCoordinator.completeAsApproved(event);
