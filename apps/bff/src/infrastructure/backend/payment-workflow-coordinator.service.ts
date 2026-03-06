@@ -58,7 +58,18 @@ export class PaymentWorkflowCoordinator {
                         } satisfies PaymentWorkflowEventPayload);
                     }
                 } catch (error) {
-                    payment.status = error instanceof ApplicationError ? PaymentStatus.Declined : PaymentStatus.Error;
+                    if (error instanceof ApplicationError) {
+                        payment.decline({
+                            code: error.code,
+                            message: error.message,
+                            details: error.details,
+                        });
+                    } else {
+                        payment.error({
+                            code: "UNKNOWN_APPLICATION_ERROR",
+                            message: error instanceof Error ? error.message : "Erro inesperado ao processar pagamento",
+                        });
+                    }
                     await this.paymentStorage.save(payment);
                     this.publishPaymentUpdated(transactionId, payment);
 

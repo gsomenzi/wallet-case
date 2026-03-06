@@ -5,6 +5,12 @@ export type StepResponse = {
     timeMs: number;
 };
 
+export type PaymentFailure = {
+    code: string;
+    message: string;
+    details?: Record<string, unknown>;
+};
+
 export enum PaymentStatus {
     Pending = "pending",
     ValidatingAccount = "validating_account",
@@ -23,12 +29,20 @@ export class PaymentResponse {
     transactionId: string;
     totalTimeMs: number;
     steps: StepResponse[];
+    failure?: PaymentFailure;
 
-    constructor(status: PaymentStatus, transactionId: string, totalTimeMs: number, steps: StepResponse[]) {
+    constructor(
+        status: PaymentStatus,
+        transactionId: string,
+        totalTimeMs: number,
+        steps: StepResponse[],
+        failure?: PaymentFailure
+    ) {
         this.status = status;
         this.transactionId = transactionId;
         this.totalTimeMs = totalTimeMs;
         this.steps = steps;
+        this.failure = failure;
     }
 
     static create(): PaymentResponse {
@@ -42,17 +56,23 @@ export class PaymentResponse {
 
     updateStatus(status: PaymentStatus) {
         this.status = status;
+        if (status !== PaymentStatus.Declined && status !== PaymentStatus.Error) {
+            this.failure = undefined;
+        }
     }
 
     approve() {
         this.status = PaymentStatus.Approved;
+        this.failure = undefined;
     }
 
-    decline() {
+    decline(failure?: PaymentFailure) {
         this.status = PaymentStatus.Declined;
+        this.failure = failure;
     }
 
-    error() {
+    error(failure?: PaymentFailure) {
         this.status = PaymentStatus.Error;
+        this.failure = failure;
     }
 }

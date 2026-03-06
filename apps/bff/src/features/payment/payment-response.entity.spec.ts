@@ -9,6 +9,7 @@ describe("PaymentResponse", () => {
         expect(paymentResponse.transactionId.length).toBeGreaterThan(0);
         expect(paymentResponse.totalTimeMs).toBe(0);
         expect(paymentResponse.steps).toEqual([]);
+        expect(paymentResponse.failure).toBeUndefined();
     });
 
     it("should add a step and update total time", () => {
@@ -35,5 +36,34 @@ describe("PaymentResponse", () => {
         const paymentResponse = PaymentResponse.create();
         paymentResponse.error();
         expect(paymentResponse.status).toBe(PaymentStatus.Error);
+    });
+
+    it("should attach failure details when declining", () => {
+        const paymentResponse = PaymentResponse.create();
+        paymentResponse.decline({
+            code: "ACCOUNT_VALIDATION_FAILED",
+            message: "Falha ao validar a conta",
+            details: { minDelayMs: 450 },
+        });
+
+        expect(paymentResponse.status).toBe(PaymentStatus.Declined);
+        expect(paymentResponse.failure).toEqual({
+            code: "ACCOUNT_VALIDATION_FAILED",
+            message: "Falha ao validar a conta",
+            details: { minDelayMs: 450 },
+        });
+    });
+
+    it("should clear failure when payment is approved", () => {
+        const paymentResponse = PaymentResponse.create();
+        paymentResponse.error({
+            code: "UNKNOWN_APPLICATION_ERROR",
+            message: "Erro inesperado",
+        });
+
+        paymentResponse.approve();
+
+        expect(paymentResponse.status).toBe(PaymentStatus.Approved);
+        expect(paymentResponse.failure).toBeUndefined();
     });
 });
