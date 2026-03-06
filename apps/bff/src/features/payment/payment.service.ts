@@ -5,7 +5,11 @@ import { TraceInstrumenter } from "../../infrastructure/observability/trace-inst
 import { PaymentStorage } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
 import { PaymentRequest } from "./payment-request.dto";
 import { PaymentResponse } from "./payment-response.entity";
-import { PaymentWorkflowEvent, PaymentWorkflowEventPayload } from "./payment-workflow.events";
+import {
+    type PaymentUpdatedEventPayload,
+    PaymentWorkflowEvent,
+    type PaymentWorkflowEventPayload,
+} from "./payment-workflow.events";
 
 @Injectable()
 export class PaymentService {
@@ -24,6 +28,10 @@ export class PaymentService {
             return await this.traceInstrumenter.usingSpan("payment_execution", {}, async () => {
                 const paymentResponse: PaymentResponse = PaymentResponse.create();
                 await this.paymentStorage.save(paymentResponse);
+                this.eventEmitter.emit(PaymentWorkflowEvent.PaymentUpdated, {
+                    transactionId: paymentResponse.transactionId,
+                    payment: paymentResponse,
+                } satisfies PaymentUpdatedEventPayload);
                 this.eventEmitter.emit(PaymentWorkflowEvent.PaymentStarted, {
                     transactionId: paymentResponse.transactionId,
                 } satisfies PaymentWorkflowEventPayload);

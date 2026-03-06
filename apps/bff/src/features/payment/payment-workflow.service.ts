@@ -37,8 +37,12 @@ import {
     type PaymentStorage,
     PaymentStorage as PaymentStorageToken,
 } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
-import { PaymentStatus, type StepResponse } from "./payment-response.entity";
-import { PaymentWorkflowEvent, type PaymentWorkflowEventPayload } from "./payment-workflow.events";
+import { type PaymentResponse, PaymentStatus, type StepResponse } from "./payment-response.entity";
+import {
+    type PaymentUpdatedEventPayload,
+    PaymentWorkflowEvent,
+    type PaymentWorkflowEventPayload,
+} from "./payment-workflow.events";
 
 @Injectable()
 export class PaymentWorkflowService {
@@ -160,6 +164,7 @@ export class PaymentWorkflowService {
                 try {
                     payment.updateStatus(statusInProgress);
                     await this.paymentStorage.save(payment);
+                    this.publishPaymentUpdated(payment.transactionId, payment);
 
                     const stepResponse = await this.runStep(step, action);
                     payment.addStep(stepResponse);
@@ -169,6 +174,7 @@ export class PaymentWorkflowService {
                     }
 
                     await this.paymentStorage.save(payment);
+                    this.publishPaymentUpdated(payment.transactionId, payment);
 
                     if (options.shouldFinalize) {
                         this.metricRecorder.recordHistogram("payment_execution_duration_ms", payment.totalTimeMs, {
@@ -189,6 +195,7 @@ export class PaymentWorkflowService {
                 } catch (error) {
                     payment.status = error instanceof ApplicationError ? PaymentStatus.Declined : PaymentStatus.Error;
                     await this.paymentStorage.save(payment);
+                    this.publishPaymentUpdated(payment.transactionId, payment);
 
                     const outcome = payment.status === PaymentStatus.Declined ? "declined" : "error";
 
@@ -224,5 +231,12 @@ export class PaymentWorkflowService {
                 outcome,
             });
         }
+    }
+
+    private publishPaymentUpdated(transactionId: string, payment: PaymentResponse): void {
+        this.eventEmitter.emit(PaymentWorkflowEvent.PaymentUpdated, {
+            transactionId,
+            payment,
+        } satisfies PaymentUpdatedEventPayload);
     }
 }

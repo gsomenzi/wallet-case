@@ -79,6 +79,10 @@ describe("PaymentService", () => {
         expect(response.totalTimeMs).toBe(0);
         expect(response.steps.length).toBe(0);
         expect(paymentStorage.save).toHaveBeenCalledWith(response);
+        expect(eventEmitter.emit).toHaveBeenCalledWith(PaymentWorkflowEvent.PaymentUpdated, {
+            transactionId: response.transactionId,
+            payment: response,
+        });
         expect(eventEmitter.emit).toHaveBeenCalledWith(PaymentWorkflowEvent.PaymentStarted, {
             transactionId: response.transactionId,
         });
