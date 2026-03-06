@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { TraceInstrumenter } from "src/infrastructure/observability/trace-instrumenter/trace-instrumenter.interface";
 import { AccountValidator } from "../../infrastructure/backend/account-validator/account-validator.interface";
 import { AcquirerProcessor } from "../../infrastructure/backend/acquirer-processor/acquirer-processor.interface";
 import { AntiFraudValidator } from "../../infrastructure/backend/anti-fraud-validator/anti-fraud-validator.interface";
@@ -16,19 +17,22 @@ export class PaymentService {
         @Inject(AntiFraudValidator) private readonly antiFraudValidator: AntiFraudValidator,
         @Inject(AcquirerProcessor) private readonly acquirerProcessor: AcquirerProcessor,
         @Inject(PaymentProcessor) private readonly paymentProcessor: PaymentProcessor,
-        @Inject(NotificationSender) private readonly notificationSender: NotificationSender
+        @Inject(NotificationSender) private readonly notificationSender: NotificationSender,
+        @Inject(TraceInstrumenter) private readonly traceInstrumenter: TraceInstrumenter
     ) {}
 
     async executePayment(_paymentRequest: PaymentRequest): Promise<PaymentResponse> {
-        const paymentResponse: PaymentResponse = PaymentResponse.create();
-        paymentResponse.addStep(await this.validateAccount());
-        paymentResponse.addStep(await this.validateCard());
-        paymentResponse.addStep(await this.validateAntifraud());
-        paymentResponse.addStep(await this.processAcquirer());
-        paymentResponse.addStep(await this.processPayment());
-        paymentResponse.addStep(await this.sendNotification());
-        paymentResponse.approve();
-        return paymentResponse;
+        return await this.traceInstrumenter.usingSpan("payment_execution", {}, async () => {
+            const paymentResponse: PaymentResponse = PaymentResponse.create();
+            paymentResponse.addStep(await this.validateAccount());
+            paymentResponse.addStep(await this.validateCard());
+            paymentResponse.addStep(await this.validateAntifraud());
+            paymentResponse.addStep(await this.processAcquirer());
+            paymentResponse.addStep(await this.processPayment());
+            paymentResponse.addStep(await this.sendNotification());
+            paymentResponse.approve();
+            return paymentResponse;
+        });
     }
 
     private async validateAccount(): Promise<StepResponse> {

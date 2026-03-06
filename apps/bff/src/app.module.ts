@@ -6,11 +6,13 @@ import { BackendModule } from "./infrastructure/backend/backend.module";
 import { BooleanRandomizerType } from "./infrastructure/boolean-randomizer/boolean-randomizer.factory";
 import { BooleanRandomizerModule } from "./infrastructure/boolean-randomizer/boolean-randomizer.module";
 import { DelaySimulatorModule } from "./infrastructure/delay-simulator/delay-simulator.module";
+import { ObservabilityModule } from "./infrastructure/observability/observability.module";
 
 @Module({
     imports: [
         BooleanRandomizerModule.forRoot({ type: BooleanRandomizerType.Default, trueProbability: 0.9 }),
         DelaySimulatorModule.forRoot(),
+        ObservabilityModule.forRoot(),
         BackendModule,
         PaymentModule,
     ],
