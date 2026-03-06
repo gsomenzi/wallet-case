@@ -322,6 +322,11 @@ return await this.traceInstrumenter.usingSpan("payment_execution", {}, async () 
 No mesmo serviço:
 
 ```ts
+this.metricRecorder.recordHistogram("payment_creation_duration_ms", durationMs, {
+   action: "payment_creation",
+   outcome,
+});
+
 this.metricRecorder.recordHistogram("payment_execution_duration_ms", durationMs, {
    action: "payment_execution",
    outcome,
@@ -347,6 +352,7 @@ this.appLogger.info("Payment processed successfully", { context: "MockPaymentPro
 ```
 
 A implementação `OtelAppLogger` adiciona `trace_id` e `span_id` do contexto ativo quando houver span válido, permitindo navegação log → trace no Grafana.
+Além disso, os logs carregam `event_name` padronizado para facilitar filtros no Loki/Grafana (ex.: `event_name="payment_processing_failed"`).
 
 ### Variáveis de ambiente úteis no BFF
 
@@ -358,7 +364,7 @@ Defaults já aplicados no bootstrap:
 - `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4318/v1/traces`
 - `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://localhost:4318/v1/metrics`
 - `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://localhost:4318/v1/logs`
-- `OTEL_METRIC_EXPORT_INTERVAL_MS=10000`
+- `OTEL_METRIC_EXPORT_INTERVAL_MS=1000`
 
 Para a fila de workflow no BFF:
 
@@ -398,13 +404,20 @@ Provisionamento da pasta no Grafana:
 
 Painéis já configurados:
 
-- `Pagamentos Realizados` (stat)
+- `Tentativas de Pagamento (Acumulado)` (stat)
+- `Pagamentos Aprovados` (stat)
 - `Tempo Médio do Pagamento` (stat)
 - `Percentual de Sucesso (Pagamento)` (stat)
 - `Tempo Médio por Step` (timeseries)
-- `Percentual de Sucesso por Step` (barchart)
+- `Eficiência por Step (Sem Retry Configurado)` (barchart)
+- `Antifraud: Sucesso Sem vs Com Retry` (barchart)
+- `Acquirer: Sucesso Sem vs Com Retry` (barchart)
+- `Payment: Sucesso Sem vs Com Retry` (barchart)
+- `Notification: Sucesso Sem vs Com Retry` (barchart)
+- `Falhas na 1ª Tentativa por Step (Retry)` (barchart)
 - `Traces Recentes (BFF)` (table via Loki + trace id)
 - `Logs Recentes (BFF)` (table via Loki)
+- `Distribuição de Erros por Step` (pie chart)
 
 ---
 
