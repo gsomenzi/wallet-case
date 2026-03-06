@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { MetricRecorder } from "src/infrastructure/observability/metric-recorder/metric-recorder.interface";
 import { TraceInstrumenter } from "src/infrastructure/observability/trace-instrumenter/trace-instrumenter.interface";
 import { AccountValidator } from "../../infrastructure/backend/account-validator/account-validator.interface";
 import { AcquirerProcessor } from "../../infrastructure/backend/acquirer-processor/acquirer-processor.interface";
@@ -18,21 +19,38 @@ export class PaymentService {
         @Inject(AcquirerProcessor) private readonly acquirerProcessor: AcquirerProcessor,
         @Inject(PaymentProcessor) private readonly paymentProcessor: PaymentProcessor,
         @Inject(NotificationSender) private readonly notificationSender: NotificationSender,
-        @Inject(TraceInstrumenter) private readonly traceInstrumenter: TraceInstrumenter
+        @Inject(TraceInstrumenter) private readonly traceInstrumenter: TraceInstrumenter,
+        @Inject(MetricRecorder) private readonly metricRecorder: MetricRecorder
     ) {}
 
     async executePayment(_paymentRequest: PaymentRequest): Promise<PaymentResponse> {
-        return await this.traceInstrumenter.usingSpan("payment_execution", {}, async () => {
-            const paymentResponse: PaymentResponse = PaymentResponse.create();
-            paymentResponse.addStep(await this.validateAccount());
-            paymentResponse.addStep(await this.validateCard());
-            paymentResponse.addStep(await this.validateAntifraud());
-            paymentResponse.addStep(await this.processAcquirer());
-            paymentResponse.addStep(await this.processPayment());
-            paymentResponse.addStep(await this.sendNotification());
-            paymentResponse.approve();
-            return paymentResponse;
-        });
+        const startedAt = Date.now();
+        let outcome: "success" | "error" = "success";
+
+        try {
+            return await this.traceInstrumenter.usingSpan("payment_execution", {}, async () => {
+                const paymentResponse: PaymentResponse = PaymentResponse.create();
+                paymentResponse.addStep(await this.validateAccount());
+                paymentResponse.addStep(await this.validateCard());
+                paymentResponse.addStep(await this.validateAntifraud());
+                paymentResponse.addStep(await this.processAcquirer());
+                paymentResponse.addStep(await this.processPayment());
+                paymentResponse.addStep(await this.sendNotification());
+                paymentResponse.approve();
+                return paymentResponse;
+            });
+        } catch (error) {
+            outcome = "error";
+            throw error;
+        } finally {
+            this.metricRecorder.recordHistogram("payment_execution_duration_ms", Date.now() - startedAt, {
+                action: "payment_execution",
+                outcome,
+            });
+            this.metricRecorder.incrementCounter("payment_total", 1, {
+                outcome,
+            });
+        }
     }
 
     private async validateAccount(): Promise<StepResponse> {
@@ -61,7 +79,23 @@ export class PaymentService {
 
     private async runStep(step: string, action: () => Promise<unknown>): Promise<StepResponse> {
         const startedAt = Date.now();
-        await action();
-        return { step, timeMs: Date.now() - startedAt };
+        let outcome: "success" | "error" = "success";
+        try {
+            await action();
+            return { step, timeMs: Date.now() - startedAt };
+        } catch (error) {
+            outcome = "error";
+            throw error;
+        } finally {
+            const durationMs = Date.now() - startedAt;
+            this.metricRecorder.recordHistogram("payment_step_duration_ms", durationMs, {
+                step,
+                outcome,
+            });
+            this.metricRecorder.incrementCounter("payment_step_total", 1, {
+                step,
+                outcome,
+            });
+        }
     }
 }
