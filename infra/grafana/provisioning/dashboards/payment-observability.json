@@ -47,8 +47,8 @@
             },
             "gridPos": {
                 "h": 8,
-                "w": 8,
-                "x": 0,
+                "w": 6,
+                "x": 6,
                 "y": 0
             },
             "id": 1,
@@ -75,14 +75,14 @@
                         "uid": "prometheus"
                     },
                     "editorMode": "code",
-                    "expr": "sum(increase(payment_total[$__range]))",
+                    "expr": "sum(payment_total{outcome=\"success\"})",
                     "instant": true,
                     "legendFormat": "",
                     "range": false,
                     "refId": "A"
                 }
             ],
-            "title": "Pagamentos Realizados",
+            "title": "Pagamentos Aprovados",
             "type": "stat"
         },
         {
@@ -112,8 +112,8 @@
             },
             "gridPos": {
                 "h": 8,
-                "w": 8,
-                "x": 8,
+                "w": 6,
+                "x": 12,
                 "y": 0
             },
             "id": 2,
@@ -140,7 +140,7 @@
                         "uid": "prometheus"
                     },
                     "editorMode": "code",
-                    "expr": "sum(increase(payment_execution_duration_ms_milliseconds_sum[$__range])) / sum(increase(payment_execution_duration_ms_milliseconds_count[$__range]))",
+                    "expr": "sum(increase(payment_execution_duration_ms_milliseconds_sum{action=\"payment_execution\"}[$__range])) / sum(increase(payment_execution_duration_ms_milliseconds_count{action=\"payment_execution\"}[$__range]))",
                     "instant": true,
                     "legendFormat": "",
                     "range": false,
@@ -187,8 +187,8 @@
             },
             "gridPos": {
                 "h": 8,
-                "w": 8,
-                "x": 16,
+                "w": 6,
+                "x": 18,
                 "y": 0
             },
             "id": 3,
@@ -215,7 +215,7 @@
                         "uid": "prometheus"
                     },
                     "editorMode": "code",
-                    "expr": "100 * sum(increase(payment_total{outcome=\"success\"}[$__range])) / sum(increase(payment_total[$__range]))",
+                    "expr": "100 * sum(payment_total{outcome=\"success\"}) / clamp_min(sum(payment_creation_total), 1)",
                     "instant": true,
                     "legendFormat": "",
                     "range": false,
@@ -223,6 +223,70 @@
                 }
             ],
             "title": "Percentual de Sucesso (Pagamento)",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "decimals": 0,
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 6,
+                "x": 0,
+                "y": 0
+            },
+            "id": 8,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "11.2.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "editorMode": "code",
+                    "expr": "sum(payment_creation_total)",
+                    "instant": true,
+                    "legendFormat": "",
+                    "range": false,
+                    "refId": "A"
+                }
+            ],
+            "title": "Tentativas de Pagamento (Acumulado)",
             "type": "stat"
         },
         {
@@ -355,8 +419,8 @@
             "gridPos": {
                 "h": 10,
                 "w": 12,
-                "x": 12,
-                "y": 8
+                "x": 0,
+                "y": 28
             },
             "id": 5,
             "options": {
@@ -384,14 +448,433 @@
                         "uid": "prometheus"
                     },
                     "editorMode": "code",
-                    "expr": "100 * sum by (step) (increase(payment_step_total{outcome=\"success\"}[$__range])) / sum by (step) (increase(payment_step_total[$__range]))",
+                    "expr": "100 * sum by (step) (increase(payment_step_total{retry_enabled=\"false\",outcome=\"success\"}[$__range])) / sum by (step) (increase(payment_step_total{retry_enabled=\"false\"}[$__range]))",
                     "instant": true,
                     "legendFormat": "{{step}}",
                     "range": false,
                     "refId": "A"
                 }
             ],
-            "title": "Percentual de Sucesso por Step",
+            "title": "Eficiência por Step (Sem Retry Configurado)",
+            "type": "barchart"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "mappings": [],
+                    "max": 100,
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "orange",
+                                "value": 80
+                            },
+                            {
+                                "color": "green",
+                                "value": 95
+                            }
+                        ]
+                    },
+                    "unit": "percent"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 6,
+                "x": 12,
+                "y": 8
+            },
+            "id": 9,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "orientation": "vertical",
+                "showValue": "always",
+                "stacking": "none",
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "xTickLabelRotation": 0,
+                "xTickLabelSpacing": 0
+            },
+            "pluginVersion": "11.2.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "editorMode": "code",
+                    "expr": "100 * sum(increase(payment_step_attempt_total{step=\"antifraud_validation\",retry_enabled=\"true\",attempt=\"1\",outcome=\"success\"}[$__range])) / sum(increase(payment_step_attempt_total{step=\"antifraud_validation\",retry_enabled=\"true\",attempt=\"1\"}[$__range]))",
+                    "instant": true,
+                    "legendFormat": "sem_retry",
+                    "range": false,
+                    "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "editorMode": "code",
+                    "expr": "100 * sum(increase(payment_step_total{step=\"antifraud_validation\",retry_enabled=\"true\",outcome=\"success\"}[$__range])) / sum(increase(payment_step_total{step=\"antifraud_validation\",retry_enabled=\"true\"}[$__range]))",
+                    "instant": true,
+                    "legendFormat": "com_retry",
+                    "range": false,
+                    "refId": "B"
+                }
+            ],
+            "title": "Antifraud: Sucesso Sem vs Com Retry",
+            "type": "barchart"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "mappings": [],
+                    "max": 100,
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "orange",
+                                "value": 80
+                            },
+                            {
+                                "color": "green",
+                                "value": 95
+                            }
+                        ]
+                    },
+                    "unit": "percent"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 6,
+                "x": 18,
+                "y": 8
+            },
+            "id": 10,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "orientation": "vertical",
+                "showValue": "always",
+                "stacking": "none",
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "xTickLabelRotation": 0,
+                "xTickLabelSpacing": 0
+            },
+            "pluginVersion": "11.2.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "editorMode": "code",
+                    "expr": "100 * sum(increase(payment_step_attempt_total{step=\"acquirer_processing\",retry_enabled=\"true\",attempt=\"1\",outcome=\"success\"}[$__range])) / sum(increase(payment_step_attempt_total{step=\"acquirer_processing\",retry_enabled=\"true\",attempt=\"1\"}[$__range]))",
+                    "instant": true,
+                    "legendFormat": "sem_retry",
+                    "range": false,
+                    "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "editorMode": "code",
+                    "expr": "100 * sum(increase(payment_step_total{step=\"acquirer_processing\",retry_enabled=\"true\",outcome=\"success\"}[$__range])) / sum(increase(payment_step_total{step=\"acquirer_processing\",retry_enabled=\"true\"}[$__range]))",
+                    "instant": true,
+                    "legendFormat": "com_retry",
+                    "range": false,
+                    "refId": "B"
+                }
+            ],
+            "title": "Acquirer: Sucesso Sem vs Com Retry",
+            "type": "barchart"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "mappings": [],
+                    "max": 100,
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "orange",
+                                "value": 80
+                            },
+                            {
+                                "color": "green",
+                                "value": 95
+                            }
+                        ]
+                    },
+                    "unit": "percent"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 6,
+                "x": 12,
+                "y": 18
+            },
+            "id": 11,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "orientation": "vertical",
+                "showValue": "always",
+                "stacking": "none",
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "xTickLabelRotation": 0,
+                "xTickLabelSpacing": 0
+            },
+            "pluginVersion": "11.2.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "editorMode": "code",
+                    "expr": "100 * sum(increase(payment_step_attempt_total{step=\"payment\",retry_enabled=\"true\",attempt=\"1\",outcome=\"success\"}[$__range])) / sum(increase(payment_step_attempt_total{step=\"payment\",retry_enabled=\"true\",attempt=\"1\"}[$__range]))",
+                    "instant": true,
+                    "legendFormat": "sem_retry",
+                    "range": false,
+                    "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "editorMode": "code",
+                    "expr": "100 * sum(increase(payment_step_total{step=\"payment\",retry_enabled=\"true\",outcome=\"success\"}[$__range])) / sum(increase(payment_step_total{step=\"payment\",retry_enabled=\"true\"}[$__range]))",
+                    "instant": true,
+                    "legendFormat": "com_retry",
+                    "range": false,
+                    "refId": "B"
+                }
+            ],
+            "title": "Payment: Sucesso Sem vs Com Retry",
+            "type": "barchart"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "mappings": [],
+                    "max": 100,
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "orange",
+                                "value": 80
+                            },
+                            {
+                                "color": "green",
+                                "value": 95
+                            }
+                        ]
+                    },
+                    "unit": "percent"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 6,
+                "x": 18,
+                "y": 18
+            },
+            "id": 12,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "orientation": "vertical",
+                "showValue": "always",
+                "stacking": "none",
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "xTickLabelRotation": 0,
+                "xTickLabelSpacing": 0
+            },
+            "pluginVersion": "11.2.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "editorMode": "code",
+                    "expr": "100 * sum(increase(payment_step_attempt_total{step=\"notification\",retry_enabled=\"true\",attempt=\"1\",outcome=\"success\"}[$__range])) / sum(increase(payment_step_attempt_total{step=\"notification\",retry_enabled=\"true\",attempt=\"1\"}[$__range]))",
+                    "instant": true,
+                    "legendFormat": "sem_retry",
+                    "range": false,
+                    "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "editorMode": "code",
+                    "expr": "100 * sum(increase(payment_step_total{step=\"notification\",retry_enabled=\"true\",outcome=\"success\"}[$__range])) / sum(increase(payment_step_total{step=\"notification\",retry_enabled=\"true\"}[$__range]))",
+                    "instant": true,
+                    "legendFormat": "com_retry",
+                    "range": false,
+                    "refId": "B"
+                }
+            ],
+            "title": "Notification: Sucesso Sem vs Com Retry",
+            "type": "barchart"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "mappings": [],
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 28
+            },
+            "id": 13,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "orientation": "vertical",
+                "showValue": "always",
+                "stacking": "none",
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "xTickLabelRotation": 0,
+                "xTickLabelSpacing": 0
+            },
+            "pluginVersion": "11.2.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "editorMode": "code",
+                    "expr": "sum by (step) (increase(payment_step_attempt_total{retry_enabled=\"true\",attempt=\"1\",outcome=\"error\"}[$__range]))",
+                    "instant": true,
+                    "legendFormat": "{{step}}",
+                    "range": false,
+                    "refId": "A"
+                }
+            ],
+            "title": "Falhas na 1ª Tentativa por Step (Retry)",
             "type": "barchart"
         },
         {
@@ -418,7 +901,7 @@
                 "h": 10,
                 "w": 12,
                 "x": 0,
-                "y": 18
+                "y": 38
             },
             "id": 6,
             "options": {
@@ -445,7 +928,7 @@
                         "uid": "loki"
                     },
                     "editorMode": "code",
-                    "expr": "{job=\"wallet-case/bff\"} | json | traceid != \"\"",
+                    "expr": "{service_name=\"bff\"} | json | traceid != \"\"",
                     "queryType": "range",
                     "refId": "A"
                 }
@@ -501,7 +984,7 @@
                 "h": 10,
                 "w": 12,
                 "x": 12,
-                "y": 18
+                "y": 38
             },
             "id": 7,
             "options": {
@@ -528,37 +1011,80 @@
                         "uid": "loki"
                     },
                     "editorMode": "code",
-                    "expr": "{job=\"wallet-case/bff\"} | json",
+                    "expr": "{service_name=\"bff\"} | json | severity=\"ERROR\"",
                     "queryType": "range",
                     "refId": "A"
                 }
             ],
-            "title": "Logs Recentes (BFF)",
-            "transformations": [
+            "title": "Erros Recentes (BFF)",
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 48
+            },
+            "id": 14,
+            "options": {
+                "displayLabels": ["name", "percent"],
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right",
+                    "showLegend": true,
+                    "values": ["value", "percent"]
+                },
+                "pieType": "pie",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"],
+                    "fields": "",
+                    "values": false
+                },
+                "tooltip": {
+                    "mode": "single"
+                }
+            },
+            "pluginVersion": "11.2.0",
+            "targets": [
                 {
-                    "id": "organize",
-                    "options": {
-                        "excludeByName": {
-                            "id": true
-                        },
-                        "indexByName": {
-                            "Time": 0,
-                            "labels": 1,
-                            "severity": 2,
-                            "body": 3,
-                            "traceid": 4,
-                            "spanid": 5
-                        },
-                        "renameByName": {
-                            "body": "Message",
-                            "severity": "Level",
-                            "spanid": "Span ID",
-                            "traceid": "Trace ID"
-                        }
-                    }
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "editorMode": "code",
+                    "expr": "sum by (step) (increase(payment_step_total{outcome=\"error\"}[$__range]))",
+                    "instant": true,
+                    "legendFormat": "{{step}}",
+                    "range": false,
+                    "refId": "A"
                 }
             ],
-            "type": "table"
+            "title": "Distribuição de Erros por Step",
+            "type": "piechart"
         }
     ],
     "refresh": "10s",
