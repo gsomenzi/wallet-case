@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { ApplicationError } from "../../../application/application-error";
 import { type Payment, PaymentStatus } from "../../../features/payment/payment.entity";
 import {
     PaymentWorkflowEvent,
@@ -88,24 +89,29 @@ export class PaymentWorkflowCoordinator {
                         } satisfies PaymentWorkflowEventPayload);
                     }
                 } catch (error) {
-                    if (input.failureBehavior === "continue") {
+                    if (error instanceof ApplicationError && input.failureBehavior === "continue") {
                         this.metricRecorder.incrementCounter("payment_step_non_blocking_failure_total", 1, {
                             step,
                         });
                         return;
                     }
 
-                    const outcome = applyWorkflowFailure(payment, error);
-                    await this.paymentStorage.save(payment);
-                    this.publishPaymentUpdated(transactionId, payment);
+                    if (error instanceof ApplicationError) {
+                        const outcome = applyWorkflowFailure(payment, error);
+                        await this.paymentStorage.save(payment);
+                        this.publishPaymentUpdated(transactionId, payment);
 
-                    this.metricRecorder.recordHistogram("payment_execution_duration_ms", payment.totalTimeMs, {
-                        action: "payment_execution",
-                        outcome,
-                    });
-                    this.metricRecorder.incrementCounter("payment_total", 1, {
-                        outcome,
-                    });
+                        this.metricRecorder.recordHistogram("payment_execution_duration_ms", payment.totalTimeMs, {
+                            action: "payment_execution",
+                            outcome,
+                        });
+                        this.metricRecorder.incrementCounter("payment_total", 1, {
+                            outcome,
+                        });
+                        return;
+                    }
+
+                    throw error;
                 }
             }
         );

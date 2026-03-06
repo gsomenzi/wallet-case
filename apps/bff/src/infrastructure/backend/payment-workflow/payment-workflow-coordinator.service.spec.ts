@@ -161,4 +161,23 @@ describe("PaymentWorkflowCoordinator", () => {
         expect(payment.status).toBe(PaymentStatus.SendingNotification);
         expect(payment.failure).toBeUndefined();
     });
+
+    it("should rethrow non-domain errors without finalizing payment", async () => {
+        const payment = Payment.create();
+        paymentStorage.findByTransactionId.mockResolvedValue(payment);
+
+        const action = jest.fn().mockRejectedValue(new Error("Connection is closed"));
+
+        await expect(
+            coordinator.execute({
+                event: { transactionId: payment.transactionId },
+                step: "payment",
+                statusInProgress: PaymentStatus.ProcessingPayment,
+                action,
+            })
+        ).rejects.toThrow("Connection is closed");
+
+        expect(payment.status).toBe(PaymentStatus.ProcessingPayment);
+        expect(payment.failure).toBeUndefined();
+    });
 });

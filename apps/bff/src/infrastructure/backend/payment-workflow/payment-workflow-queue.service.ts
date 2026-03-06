@@ -15,6 +15,11 @@ export class PaymentWorkflowQueueService {
 
     async enqueue(eventName: string, payload: PaymentWorkflowEventPayload, options?: JobsOptions): Promise<void> {
         await this.queue.add(eventName, payload, {
+            attempts: 5,
+            backoff: {
+                type: "exponential",
+                delay: 1000,
+            },
             removeOnComplete: 500,
             removeOnFail: 1000,
             ...options,
