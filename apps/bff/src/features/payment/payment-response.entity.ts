@@ -7,6 +7,12 @@ export type StepResponse = {
 
 export enum PaymentStatus {
     Pending = "pending",
+    ValidatingAccount = "validating_account",
+    ValidatingCard = "validating_card",
+    ValidatingAntifraud = "validating_antifraud",
+    ProcessingAcquirer = "processing_acquirer",
+    ProcessingPayment = "processing_payment",
+    SendingNotification = "sending_notification",
     Approved = "approved",
     Declined = "declined",
     Error = "error",
@@ -32,6 +38,10 @@ export class PaymentResponse {
     addStep(step: StepResponse) {
         this.steps.push(step);
         this.totalTimeMs += step.timeMs;
+    }
+
+    updateStatus(status: PaymentStatus) {
+        this.status = status;
     }
 
     approve() {

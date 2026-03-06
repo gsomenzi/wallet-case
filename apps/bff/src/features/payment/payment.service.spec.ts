@@ -1,63 +1,24 @@
 import { NotFoundException } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, TestingModule } from "@nestjs/testing";
-import { AccountValidator } from "../../infrastructure/backend/account-validator/account-validator.interface";
-import { AcquirerProcessor } from "../../infrastructure/backend/acquirer-processor/acquirer-processor.interface";
-import { AntiFraudValidator } from "../../infrastructure/backend/anti-fraud-validator/anti-fraud-validator.interface";
-import { CardValidator } from "../../infrastructure/backend/card-validator/card-validator.interface";
-import { NotificationSender } from "../../infrastructure/backend/notification-sender/notification-sender.interface";
-import { PaymentProcessor } from "../../infrastructure/backend/payment-processor/payment-processor.interface";
 import { MetricRecorder } from "../../infrastructure/observability/metric-recorder/metric-recorder.interface";
 import { TraceInstrumenter } from "../../infrastructure/observability/trace-instrumenter/trace-instrumenter.interface";
 import { PaymentStorage } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
 import { PaymentService } from "./payment.service";
 import { PaymentRequest } from "./payment-request.dto";
 import { PaymentResponse, PaymentStatus } from "./payment-response.entity";
+import { PaymentWorkflowEvent } from "./payment-workflow.events";
 
 describe("PaymentService", () => {
     let service: PaymentService;
     let testingModule: TestingModule;
     let paymentStorage: { save: jest.Mock; findByTransactionId: jest.Mock };
+    let eventEmitter: { emit: jest.Mock };
 
     beforeEach(async () => {
         testingModule = await Test.createTestingModule({
             providers: [
                 PaymentService,
-                {
-                    provide: AccountValidator,
-                    useValue: {
-                        validate: jest.fn().mockResolvedValue(true),
-                    },
-                },
-                {
-                    provide: CardValidator,
-                    useValue: {
-                        validate: jest.fn().mockResolvedValue(true),
-                    },
-                },
-                {
-                    provide: AntiFraudValidator,
-                    useValue: {
-                        validate: jest.fn().mockResolvedValue(true),
-                    },
-                },
-                {
-                    provide: AcquirerProcessor,
-                    useValue: {
-                        process: jest.fn().mockResolvedValue(undefined),
-                    },
-                },
-                {
-                    provide: PaymentProcessor,
-                    useValue: {
-                        process: jest.fn().mockResolvedValue(undefined),
-                    },
-                },
-                {
-                    provide: NotificationSender,
-                    useValue: {
-                        send: jest.fn().mockResolvedValue(undefined),
-                    },
-                },
                 {
                     provide: PaymentStorage,
                     useValue: {
@@ -83,18 +44,25 @@ describe("PaymentService", () => {
                         incrementCounter: jest.fn(),
                     },
                 },
+                {
+                    provide: EventEmitter2,
+                    useValue: {
+                        emit: jest.fn(),
+                    },
+                },
             ],
         }).compile();
 
         service = testingModule.get<PaymentService>(PaymentService);
         paymentStorage = testingModule.get<{ save: jest.Mock; findByTransactionId: jest.Mock }>(PaymentStorage);
+        eventEmitter = testingModule.get<{ emit: jest.Mock }>(EventEmitter2);
     });
 
     it("should be defined", () => {
         expect(service).toBeDefined();
     });
 
-    it("should process payment and return a valid response", async () => {
+    it("should create payment as pending and emit start workflow event", async () => {
         const request: PaymentRequest = {
             cardNumber: "4111111111111111",
             cardHolder: "John Doe",
@@ -106,14 +74,13 @@ describe("PaymentService", () => {
 
         expect(response).toBeDefined();
         expect(response).toBeInstanceOf(PaymentResponse);
-        expect(response.status).toBe(PaymentStatus.Approved);
+        expect(response.status).toBe(PaymentStatus.Pending);
         expect(response.transactionId).toBeDefined();
-        expect(response.totalTimeMs).toBeGreaterThanOrEqual(0);
-        expect(response.steps.length).toBe(6);
+        expect(response.totalTimeMs).toBe(0);
+        expect(response.steps.length).toBe(0);
         expect(paymentStorage.save).toHaveBeenCalledWith(response);
-        response.steps.forEach((step) => {
-            expect(step.timeMs).toBeGreaterThanOrEqual(0);
-            expect(step.step).toBeDefined();
+        expect(eventEmitter.emit).toHaveBeenCalledWith(PaymentWorkflowEvent.PaymentStarted, {
+            transactionId: response.transactionId,
         });
     });
 
