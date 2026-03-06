@@ -9,10 +9,7 @@ import {
     WebSocketServer,
 } from "@nestjs/websockets";
 import type { Server, Socket } from "socket.io";
-import {
-    type PaymentStorage,
-    PaymentStorage as PaymentStorageToken,
-} from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
+import { PaymentStorage } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
 import {
     type PaymentUpdatedEventPayload,
     PaymentWorkflowEvent,
@@ -29,7 +26,7 @@ export class PaymentUpdatesGateway implements OnGatewayInit {
     @WebSocketServer()
     private server!: Server;
 
-    constructor(@Inject(PaymentStorageToken) private readonly paymentStorage: PaymentStorage) {}
+    constructor(@Inject(PaymentStorage) private readonly paymentStorage: PaymentStorage) {}
 
     afterInit(): void {
         return;
