@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { PaymentUpdatesBroadcaster } from "../../infrastructure/backend/payment-workflow/payment-updates-broadcaster.service";
 import { PaymentStorage } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
 import { Payment } from "./payment.entity";
 import { PaymentUpdatesGateway } from "./payment-updates.gateway";
@@ -15,6 +16,12 @@ describe("PaymentUpdatesGateway", () => {
                     provide: PaymentStorage,
                     useValue: {
                         findByTransactionId: jest.fn(),
+                    },
+                },
+                {
+                    provide: PaymentUpdatesBroadcaster,
+                    useValue: {
+                        registerHandler: jest.fn(),
                     },
                 },
             ],

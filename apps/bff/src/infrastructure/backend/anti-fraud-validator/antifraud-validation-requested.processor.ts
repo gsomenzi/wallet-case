@@ -1,5 +1,4 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { OnEvent } from "@nestjs/event-emitter";
 import { PaymentStatus } from "../../../features/payment/payment.entity";
 import {
     PaymentWorkflowEvent,
@@ -19,8 +18,7 @@ export class AntifraudValidationRequestedProcessor {
         private readonly paymentWorkflowCoordinator: PaymentWorkflowCoordinator
     ) {}
 
-    @OnEvent(PaymentWorkflowEvent.AntifraudValidationRequested, { async: true })
-    async handleAntifraudValidationRequested(event: PaymentWorkflowEventPayload): Promise<void> {
+    async handle(event: PaymentWorkflowEventPayload): Promise<void> {
         await this.paymentWorkflowCoordinator.execute({
             event,
             step: "antifraud_validation",

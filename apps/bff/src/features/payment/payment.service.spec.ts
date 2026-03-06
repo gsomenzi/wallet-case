@@ -1,6 +1,7 @@
 import { NotFoundException } from "@nestjs/common";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, TestingModule } from "@nestjs/testing";
+import { PaymentUpdatesBroadcaster } from "../../infrastructure/backend/payment-workflow/payment-updates-broadcaster.service";
+import { PaymentWorkflowQueueService } from "../../infrastructure/backend/payment-workflow/payment-workflow-queue.service";
 import { MetricRecorder } from "../../infrastructure/observability/metric-recorder/metric-recorder.interface";
 import { TraceInstrumenter } from "../../infrastructure/observability/trace-instrumenter/trace-instrumenter.interface";
 import { PaymentStorage } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
@@ -13,7 +14,8 @@ describe("PaymentService", () => {
     let service: PaymentService;
     let testingModule: TestingModule;
     let paymentStorage: { save: jest.Mock; findByTransactionId: jest.Mock };
-    let eventEmitter: { emit: jest.Mock };
+    let paymentUpdatesBroadcaster: { publish: jest.Mock };
+    let paymentWorkflowQueueService: { enqueue: jest.Mock };
 
     beforeEach(async () => {
         testingModule = await Test.createTestingModule({
@@ -45,9 +47,15 @@ describe("PaymentService", () => {
                     },
                 },
                 {
-                    provide: EventEmitter2,
+                    provide: PaymentUpdatesBroadcaster,
                     useValue: {
-                        emit: jest.fn(),
+                        publish: jest.fn(),
+                    },
+                },
+                {
+                    provide: PaymentWorkflowQueueService,
+                    useValue: {
+                        enqueue: jest.fn().mockResolvedValue(undefined),
                     },
                 },
             ],
@@ -58,7 +66,8 @@ describe("PaymentService", () => {
             save: jest.Mock;
             findByTransactionId: jest.Mock;
         }>(PaymentStorage);
-        eventEmitter = testingModule.get<{ emit: jest.Mock }>(EventEmitter2);
+        paymentUpdatesBroadcaster = testingModule.get<{ publish: jest.Mock }>(PaymentUpdatesBroadcaster);
+        paymentWorkflowQueueService = testingModule.get<{ enqueue: jest.Mock }>(PaymentWorkflowQueueService);
     });
 
     it("should be defined", () => {
@@ -82,11 +91,11 @@ describe("PaymentService", () => {
         expect(response.totalTimeMs).toBe(0);
         expect(response.steps.length).toBe(0);
         expect(paymentStorage.save).toHaveBeenCalledWith(response);
-        expect(eventEmitter.emit).toHaveBeenCalledWith(PaymentWorkflowEvent.PaymentUpdated, {
+        expect(paymentUpdatesBroadcaster.publish).toHaveBeenCalledWith({
             transactionId: response.transactionId,
             payment: response,
         });
-        expect(eventEmitter.emit).toHaveBeenCalledWith(PaymentWorkflowEvent.PaymentStarted, {
+        expect(paymentWorkflowQueueService.enqueue).toHaveBeenCalledWith(PaymentWorkflowEvent.PaymentStarted, {
             transactionId: response.transactionId,
         });
     });

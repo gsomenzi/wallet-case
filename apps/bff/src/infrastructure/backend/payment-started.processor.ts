@@ -1,14 +1,13 @@
 import { Injectable } from "@nestjs/common";
-import { EventEmitter2, OnEvent } from "@nestjs/event-emitter";
 import { PaymentWorkflowEvent, type PaymentWorkflowEventPayload } from "../../features/payment/payment-workflow.events";
+import { PaymentWorkflowQueueService } from "./payment-workflow/payment-workflow-queue.service";
 
 @Injectable()
 export class PaymentStartedProcessor {
-    constructor(private readonly eventEmitter: EventEmitter2) {}
+    constructor(private readonly paymentWorkflowQueueService: PaymentWorkflowQueueService) {}
 
-    @OnEvent(PaymentWorkflowEvent.PaymentStarted, { async: true })
-    async handlePaymentStarted(event: PaymentWorkflowEventPayload): Promise<void> {
-        this.eventEmitter.emit(PaymentWorkflowEvent.AccountValidationRequested, {
+    async handle(event: PaymentWorkflowEventPayload): Promise<void> {
+        await this.paymentWorkflowQueueService.enqueue(PaymentWorkflowEvent.AccountValidationRequested, {
             transactionId: event.transactionId,
         } satisfies PaymentWorkflowEventPayload);
     }

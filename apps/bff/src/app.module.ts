@@ -1,6 +1,6 @@
+import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { APP_FILTER } from "@nestjs/core";
-import { EventEmitterModule } from "@nestjs/event-emitter";
 import { GlobalExceptionFilter } from "./application/global-exception-filter";
 import { PaymentModule } from "./features/payment/payment.module";
 import { BackendModule } from "./infrastructure/backend/backend.module";
@@ -12,7 +12,14 @@ import { PersistenceModule } from "./infrastructure/persistence/persistence.modu
 
 @Module({
     imports: [
-        EventEmitterModule.forRoot(),
+        BullModule.forRoot({
+            connection: {
+                host: process.env.REDIS_HOST ?? "localhost",
+                port: Number(process.env.REDIS_PORT ?? "6379"),
+                db: Number(process.env.REDIS_DB ?? "0"),
+                password: process.env.REDIS_PASSWORD,
+            },
+        }),
         BooleanRandomizerModule.forRoot({
             type: BooleanRandomizerType.Default,
             trueProbability: 0.9,

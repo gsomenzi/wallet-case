@@ -156,17 +156,17 @@ Motivação:
 - Facilitar entendimento e execução do projeto pelo avaliador
 - Evitar overengineering para um cenário controlado de avaliação
 
-### 4) Fluxo assíncrono com sistema de eventos do NestJS
+### 4) Fluxo assíncrono com fila persistente em Redis
 
-Para implementar o processamento assíncrono de pagamento, foi escolhido o **EventEmitter do NestJS**.
+Para implementar o processamento assíncrono de pagamento com continuidade após restart do serviço, o workflow foi migrado para **BullMQ + Redis**.
 
 Motivação:
 
-- Evitar dependência de infraestrutura externa de filas (RabbitMQ, Kafka, etc.)
-- Economizar tempo de implementação no escopo do case
-- Diminuir demanda de recursos da máquina do avaliador ao rodar o projeto localmente
+- Persistir jobs do workflow fora da memória do processo
+- Permitir reinício do BFF sem perder progresso dos eventos pendentes
+- Manter encadeamento assíncrono dos steps com menor risco de perda em falhas locais
 
-Com isso, o sistema consegue processar o pagamento em etapas assíncronas sem exigir setup adicional além do próprio BFF.
+Com isso, o sistema processa o pagamento em etapas assíncronas com fila persistente, retomando o fluxo quando o serviço volta.
 
 ### 5) Atualização em tempo real via WebSocket no app mobile
 
@@ -175,24 +175,25 @@ Foi adotado **WebSocket (Gateway do Nest + Socket.IO no mobile)** para que o app
 Benefícios da abordagem:
 
 - Atualização contínua do status sem polling agressivo
-- Suporte ao fluxo assíncrono sem necessidade de filas externas
+- Integração simples com o fluxo assíncrono do backend
 - Dispensa de sistema de push notifications para este caso de uso específico
 
 Essa combinação permitiu uma experiência de acompanhamento em tempo real mantendo arquitetura e setup locais simples para avaliação.
 
-## Observabilidade (local)
+## Infra local
 
-O projeto já possui observabilidade implementada no BFF e stack local provisionada com:
+O projeto possui observabilidade implementada no BFF e stack local provisionada com:
 
 - **OpenTelemetry Collector** (ponto central de ingestão)
 - **Tempo** (traces)
 - **Prometheus** (métricas)
 - **Loki** (logs)
 - **Grafana** (visualização e correlação)
+- **Redis** (fila persistente do workflow de pagamento)
 
 ### Ambiente e arquitetura
 
-Todos os serviços sobem via `observability/docker-compose.yml` em uma rede bridge `observability`.
+Todos os serviços sobem via `infra/docker-compose.yml` em uma rede bridge `observability`.
 
 Serviços e portas:
 
@@ -200,6 +201,7 @@ Serviços e portas:
 - Prometheus: `localhost:9090`
 - Loki: `localhost:3100`
 - Tempo: `localhost:3200`
+- Redis: `localhost:6379`
 - OTel Collector:
    - OTLP gRPC: `localhost:4317`
    - OTLP HTTP: `localhost:4318`
@@ -248,7 +250,7 @@ Detalhes importantes:
 ### Como subir e validar
 
 ```bash
-cd observability/
+cd infra/
 docker compose up -d
 docker compose ps
 ```
@@ -358,6 +360,17 @@ Defaults já aplicados no bootstrap:
 - `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://localhost:4318/v1/logs`
 - `OTEL_METRIC_EXPORT_INTERVAL_MS=10000`
 
+Para a fila de workflow no BFF:
+
+- `REDIS_HOST=localhost`
+- `REDIS_PORT=6379`
+- `REDIS_DB=0`
+- `REDIS_PASSWORD=` (opcional)
+
+Para persistência de pagamentos no BFF (SQLite):
+
+- `SQLITE_DB_PATH=data/wallet-case.sqlite`
+
 ### Acesso ao Grafana
 
 - URL: <http://localhost:3001>
@@ -366,13 +379,13 @@ Defaults já aplicados no bootstrap:
 
 Datasources são provisionados automaticamente em:
 
-- `observability/grafana/provisioning/datasources/datasources.yml`
+- `infra/grafana/provisioning/datasources/datasources.yml`
 
 ### Dashboard provisionada
 
 Dashboard definida em:
 
-- `observability/grafana/provisioning/dashboards/payment-observability.json`
+- `infra/grafana/provisioning/dashboards/payment-observability.json`
 
 Provisionamento da pasta no Grafana:
 

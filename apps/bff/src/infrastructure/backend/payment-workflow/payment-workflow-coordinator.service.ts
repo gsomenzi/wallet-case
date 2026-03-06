@@ -1,8 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { type Payment, PaymentStatus } from "../../../features/payment/payment.entity";
 import {
-    type PaymentUpdatedEventPayload,
     PaymentWorkflowEvent,
     type PaymentWorkflowEventPayload,
 } from "../../../features/payment/payment-workflow.events";
@@ -10,8 +8,10 @@ import { MetricRecorder } from "../../observability/metric-recorder/metric-recor
 import { TraceInstrumenter } from "../../observability/trace-instrumenter/trace-instrumenter.interface";
 import { PaymentStorage } from "../../persistence/payment-storage/payment-storage.interface";
 import { PaymentStepExecutor, type RetryPolicy } from "./payment-step-executor";
+import { PaymentUpdatesBroadcaster } from "./payment-updates-broadcaster.service";
 import { applyWorkflowFailure } from "./payment-workflow-failure";
 import { hasStepAlreadyExecuted, isTerminalStatus } from "./payment-workflow-guards";
+import { PaymentWorkflowQueueService } from "./payment-workflow-queue.service";
 
 type ExecuteStepFailureBehavior = "fail-payment" | "continue";
 
@@ -33,7 +33,8 @@ export class PaymentWorkflowCoordinator {
         private readonly traceInstrumenter: TraceInstrumenter,
         @Inject(MetricRecorder) private readonly metricRecorder: MetricRecorder,
         private readonly paymentStepExecutor: PaymentStepExecutor,
-        private readonly eventEmitter: EventEmitter2
+        private readonly paymentUpdatesBroadcaster: PaymentUpdatesBroadcaster,
+        private readonly paymentWorkflowQueueService: PaymentWorkflowQueueService
     ) {}
 
     async execute(input: ExecuteStepInput): Promise<void> {
@@ -55,7 +56,7 @@ export class PaymentWorkflowCoordinator {
 
                 if (hasStepAlreadyExecuted(payment, step)) {
                     if (input.nextEvent) {
-                        this.eventEmitter.emit(input.nextEvent, {
+                        await this.paymentWorkflowQueueService.enqueue(input.nextEvent, {
                             transactionId,
                         } satisfies PaymentWorkflowEventPayload);
                     }
@@ -82,7 +83,7 @@ export class PaymentWorkflowCoordinator {
                     this.publishPaymentUpdated(transactionId, payment);
 
                     if (input.nextEvent) {
-                        this.eventEmitter.emit(input.nextEvent, {
+                        await this.paymentWorkflowQueueService.enqueue(input.nextEvent, {
                             transactionId,
                         } satisfies PaymentWorkflowEventPayload);
                     }
@@ -128,9 +129,9 @@ export class PaymentWorkflowCoordinator {
     }
 
     private publishPaymentUpdated(transactionId: string, payment: Payment): void {
-        this.eventEmitter.emit(PaymentWorkflowEvent.PaymentUpdated, {
+        this.paymentUpdatesBroadcaster.publish({
             transactionId,
             payment,
-        } satisfies PaymentUpdatedEventPayload);
+        });
     }
 }

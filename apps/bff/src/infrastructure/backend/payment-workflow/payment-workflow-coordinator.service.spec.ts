@@ -1,4 +1,3 @@
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, TestingModule } from "@nestjs/testing";
 import { AccountValidationFailedError } from "../../../application/application-errors/account-validation-error";
 import { PaymentProcessingFailedError } from "../../../application/application-errors/payment-processing-error";
@@ -8,12 +7,14 @@ import { MetricRecorder } from "../../observability/metric-recorder/metric-recor
 import { TraceInstrumenter } from "../../observability/trace-instrumenter/trace-instrumenter.interface";
 import { PaymentStorage } from "../../persistence/payment-storage/payment-storage.interface";
 import { PaymentStepExecutor } from "./payment-step-executor";
+import { PaymentUpdatesBroadcaster } from "./payment-updates-broadcaster.service";
 import { PaymentWorkflowCoordinator } from "./payment-workflow-coordinator.service";
+import { PaymentWorkflowQueueService } from "./payment-workflow-queue.service";
 
 describe("PaymentWorkflowCoordinator", () => {
     let coordinator: PaymentWorkflowCoordinator;
     let paymentStorage: { save: jest.Mock; findByTransactionId: jest.Mock };
-    let eventEmitter: { emit: jest.Mock };
+    let paymentWorkflowQueueService: { enqueue: jest.Mock };
 
     beforeEach(async () => {
         const testingModule: TestingModule = await Test.createTestingModule({
@@ -45,9 +46,15 @@ describe("PaymentWorkflowCoordinator", () => {
                     },
                 },
                 {
-                    provide: EventEmitter2,
+                    provide: PaymentUpdatesBroadcaster,
                     useValue: {
-                        emit: jest.fn(),
+                        publish: jest.fn(),
+                    },
+                },
+                {
+                    provide: PaymentWorkflowQueueService,
+                    useValue: {
+                        enqueue: jest.fn().mockResolvedValue(undefined),
                     },
                 },
                 PaymentStepExecutor,
@@ -56,7 +63,7 @@ describe("PaymentWorkflowCoordinator", () => {
 
         coordinator = testingModule.get(PaymentWorkflowCoordinator);
         paymentStorage = testingModule.get(PaymentStorage);
-        eventEmitter = testingModule.get(EventEmitter2);
+        paymentWorkflowQueueService = testingModule.get(PaymentWorkflowQueueService);
     });
 
     it("should retry step when failure is retryable and then succeed", async () => {
@@ -124,9 +131,12 @@ describe("PaymentWorkflowCoordinator", () => {
         });
 
         expect(action).not.toHaveBeenCalled();
-        expect(eventEmitter.emit).toHaveBeenCalledWith(PaymentWorkflowEvent.AntifraudValidationRequested, {
-            transactionId: payment.transactionId,
-        });
+        expect(paymentWorkflowQueueService.enqueue).toHaveBeenCalledWith(
+            PaymentWorkflowEvent.AntifraudValidationRequested,
+            {
+                transactionId: payment.transactionId,
+            }
+        );
     });
 
     it("should continue flow on non-blocking failure", async () => {

@@ -1,15 +1,12 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { EventEmitter2 } from "@nestjs/event-emitter";
+import { PaymentUpdatesBroadcaster } from "../../infrastructure/backend/payment-workflow/payment-updates-broadcaster.service";
+import { PaymentWorkflowQueueService } from "../../infrastructure/backend/payment-workflow/payment-workflow-queue.service";
 import { MetricRecorder } from "../../infrastructure/observability/metric-recorder/metric-recorder.interface";
 import { TraceInstrumenter } from "../../infrastructure/observability/trace-instrumenter/trace-instrumenter.interface";
 import { PaymentStorage } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
 import { Payment } from "./payment.entity";
 import { PaymentRequest } from "./payment-request.dto";
-import {
-    type PaymentUpdatedEventPayload,
-    PaymentWorkflowEvent,
-    type PaymentWorkflowEventPayload,
-} from "./payment-workflow.events";
+import { PaymentWorkflowEvent, type PaymentWorkflowEventPayload } from "./payment-workflow.events";
 
 @Injectable()
 export class PaymentService {
@@ -18,7 +15,8 @@ export class PaymentService {
         @Inject(TraceInstrumenter)
         private readonly traceInstrumenter: TraceInstrumenter,
         @Inject(MetricRecorder) private readonly metricRecorder: MetricRecorder,
-        private readonly eventEmitter: EventEmitter2
+        private readonly paymentUpdatesBroadcaster: PaymentUpdatesBroadcaster,
+        private readonly paymentWorkflowQueueService: PaymentWorkflowQueueService
     ) {}
 
     async executePayment(_paymentRequest: PaymentRequest): Promise<Payment> {
@@ -30,11 +28,11 @@ export class PaymentService {
                 const payment: Payment = Payment.create();
                 const { transactionId } = payment;
                 await this.paymentStorage.save(payment);
-                this.eventEmitter.emit(PaymentWorkflowEvent.PaymentUpdated, {
+                this.paymentUpdatesBroadcaster.publish({
                     transactionId,
                     payment,
-                } satisfies PaymentUpdatedEventPayload);
-                this.eventEmitter.emit(PaymentWorkflowEvent.PaymentStarted, {
+                });
+                await this.paymentWorkflowQueueService.enqueue(PaymentWorkflowEvent.PaymentStarted, {
                     transactionId,
                 } satisfies PaymentWorkflowEventPayload);
                 return payment;

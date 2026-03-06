@@ -9,8 +9,27 @@ volumes:
   prometheus-data:
   loki-data:
   tempo-data:
+  redis-data:
 
 services:
+  redis:
+    image: redis:7.4-alpine
+    container_name: infra-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      - observability
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   grafana:
     image: grafana/grafana:11.2.0
     container_name: obs-grafana

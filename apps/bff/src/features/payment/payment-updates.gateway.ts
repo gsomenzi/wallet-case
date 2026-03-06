@@ -1,5 +1,4 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { OnEvent } from "@nestjs/event-emitter";
 import {
     ConnectedSocket,
     MessageBody,
@@ -9,12 +8,9 @@ import {
     WebSocketServer,
 } from "@nestjs/websockets";
 import type { Server, Socket } from "socket.io";
+import { PaymentUpdatesBroadcaster } from "../../infrastructure/backend/payment-workflow/payment-updates-broadcaster.service";
 import { PaymentStorage } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
-import {
-    type PaymentUpdatedEventPayload,
-    PaymentWorkflowEvent,
-    type PaymentWorkflowEventPayload,
-} from "./payment-workflow.events";
+import type { PaymentWorkflowEventPayload } from "./payment-workflow.events";
 
 const PAYMENT_GATEWAY_NAMESPACE = "payments";
 const PAYMENT_UPDATED_EVENT = "payment.updated";
@@ -29,10 +25,15 @@ export class PaymentUpdatesGateway implements OnGatewayInit {
     @WebSocketServer()
     private server!: Server;
 
-    constructor(@Inject(PaymentStorage) private readonly paymentStorage: PaymentStorage) {}
+    constructor(
+        @Inject(PaymentStorage) private readonly paymentStorage: PaymentStorage,
+        private readonly paymentUpdatesBroadcaster: PaymentUpdatesBroadcaster
+    ) {}
 
     afterInit(): void {
-        return;
+        this.paymentUpdatesBroadcaster.registerHandler((event) => {
+            this.server.to(this.getPaymentRoom(event.transactionId)).emit(PAYMENT_UPDATED_EVENT, event.payment);
+        });
     }
 
     @SubscribeMessage(PAYMENT_SUBSCRIBE_EVENT)
@@ -52,11 +53,6 @@ export class PaymentUpdatesGateway implements OnGatewayInit {
         if (payment) {
             client.emit(PAYMENT_UPDATED_EVENT, payment);
         }
-    }
-
-    @OnEvent(PaymentWorkflowEvent.PaymentUpdated, { async: true })
-    async handlePaymentUpdated(event: PaymentUpdatedEventPayload): Promise<void> {
-        this.server.to(this.getPaymentRoom(event.transactionId)).emit(PAYMENT_UPDATED_EVENT, event.payment);
     }
 
     private getPaymentRoom(transactionId: string): string {

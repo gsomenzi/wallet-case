@@ -1,4 +1,6 @@
+import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
+import { PAYMENT_WORKFLOW_QUEUE } from "../../features/payment/payment-workflow.events";
 import { PersistenceModule } from "../persistence/persistence.module";
 import { AccountValidationRequestedProcessor } from "./account-validator/account-validation-requested.processor";
 import { AccountValidator } from "./account-validator/account-validator.interface";
@@ -20,10 +22,13 @@ import { PaymentProcessingRequestedProcessor } from "./payment-processor/payment
 import { PaymentProcessor } from "./payment-processor/payment-processor.interface";
 import { PaymentStartedProcessor } from "./payment-started.processor";
 import { PaymentStepExecutor } from "./payment-workflow/payment-step-executor";
+import { PaymentUpdatesBroadcaster } from "./payment-workflow/payment-updates-broadcaster.service";
+import { PaymentWorkflowProcessor } from "./payment-workflow/payment-workflow.processor";
 import { PaymentWorkflowCoordinator } from "./payment-workflow/payment-workflow-coordinator.service";
+import { PaymentWorkflowQueueService } from "./payment-workflow/payment-workflow-queue.service";
 
 @Module({
-    imports: [PersistenceModule],
+    imports: [PersistenceModule, BullModule.registerQueue({ name: PAYMENT_WORKFLOW_QUEUE })],
     providers: [
         {
             provide: AccountValidator,
@@ -50,7 +55,10 @@ import { PaymentWorkflowCoordinator } from "./payment-workflow/payment-workflow-
             useClass: MockPaymentProcessor,
         },
         PaymentStepExecutor,
+        PaymentUpdatesBroadcaster,
+        PaymentWorkflowQueueService,
         PaymentWorkflowCoordinator,
+        PaymentWorkflowProcessor,
         PaymentStartedProcessor,
         AccountValidationRequestedProcessor,
         CardValidationRequestedProcessor,
@@ -66,6 +74,8 @@ import { PaymentWorkflowCoordinator } from "./payment-workflow/payment-workflow-
         CardValidator,
         NotificationSender,
         PaymentProcessor,
+        PaymentUpdatesBroadcaster,
+        PaymentWorkflowQueueService,
     ],
 })
 export class BackendModule {}

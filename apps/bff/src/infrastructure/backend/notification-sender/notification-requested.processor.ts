@@ -1,10 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { OnEvent } from "@nestjs/event-emitter";
 import { PaymentStatus } from "../../../features/payment/payment.entity";
-import {
-    PaymentWorkflowEvent,
-    type PaymentWorkflowEventPayload,
-} from "../../../features/payment/payment-workflow.events";
+import { type PaymentWorkflowEventPayload } from "../../../features/payment/payment-workflow.events";
 import { PaymentWorkflowCoordinator } from "../payment-workflow/payment-workflow-coordinator.service";
 import { NotificationSender, type NotificationSender as NotificationSenderType } from "./notification-sender.interface";
 
@@ -16,8 +12,7 @@ export class NotificationRequestedProcessor {
         private readonly paymentWorkflowCoordinator: PaymentWorkflowCoordinator
     ) {}
 
-    @OnEvent(PaymentWorkflowEvent.NotificationRequested, { async: true })
-    async handleNotificationRequested(event: PaymentWorkflowEventPayload): Promise<void> {
+    async handle(event: PaymentWorkflowEventPayload): Promise<void> {
         await this.paymentWorkflowCoordinator.execute({
             event,
             step: "notification",
