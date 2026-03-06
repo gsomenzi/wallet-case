@@ -2,6 +2,28 @@
 
 Repositório monorepo do projeto **Wallet Case**, contendo os aplicativos de **backend (BFF)** e **mobile** no mesmo workspace.
 
+## Releases e checkpoints
+
+Durante a implementação, foram criadas releases como checkpoints (versões de entrega) para facilitar acompanhamento da evolução do projeto.
+
+É possível navegar entre essas versões por tags Git (ex.: `v1.0.0`) para inspecionar exatamente o estado entregue em cada checkpoint.
+
+Essas versões também podem ser consultadas diretamente na lista de Releases do repositório.
+
+Exemplo de checkout de uma tag específica:
+
+```bash
+git fetch --tags
+git checkout tags/v1.0.0
+```
+
+Para voltar para a branch principal:
+
+```bash
+git checkout main
+git pull
+```
+
 ## Execução rápida
 
 Para validar rapidamente o projeto, siga esta ordem em terminais separados:
@@ -185,3 +207,18 @@ Os detalhes dos mecanismos de resiliência do BFF (persistência, workflow assí
 Os detalhes sobre uso de IA no desenvolvimento foram separados em um documento dedicado:
 
 - [docs/uso-de-ia-no-desenvolvimento.md](docs/uso-de-ia-no-desenvolvimento.md)
+
+## Considerações sobre a entrega
+
+Esta entrega foi planejada para equilibrar **qualidade técnica**, **demonstração de conhecimento e habilidades**, **simplicidade de ambiente** e **velocidade de execução**.
+
+Por esse motivo, algumas decisões priorizaram pragmatismo para viabilizar um fluxo completo e executável localmente no contexto de avaliação. Assim, existem pontos que não foram implementados nesta versão ou que podem evoluir em uma próxima etapa.
+
+Exemplos de evolução:
+
+- Refinamento da arquitetura de desenvolvimento e maior separação de responsabilidades em alguns módulos
+- Expansão e padronização de design patterns aplicados em fluxos e integrações
+- Adoção de broker externo dedicado para mensageria
+- Revisão e evolução das métricas de observabilidade e dos painéis de acompanhamento
+- Aumento da cobertura de testes (unitários, integração e E2E)
+- Evolução de funcionalidades no mobile e melhorias de experiência de uso
