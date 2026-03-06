@@ -1,12 +1,13 @@
-import { Inject, Injectable } from "@nestjs/common";
-import { MetricRecorder } from "src/infrastructure/observability/metric-recorder/metric-recorder.interface";
-import { TraceInstrumenter } from "src/infrastructure/observability/trace-instrumenter/trace-instrumenter.interface";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { AccountValidator } from "../../infrastructure/backend/account-validator/account-validator.interface";
 import { AcquirerProcessor } from "../../infrastructure/backend/acquirer-processor/acquirer-processor.interface";
 import { AntiFraudValidator } from "../../infrastructure/backend/anti-fraud-validator/anti-fraud-validator.interface";
 import { CardValidator } from "../../infrastructure/backend/card-validator/card-validator.interface";
 import { NotificationSender } from "../../infrastructure/backend/notification-sender/notification-sender.interface";
 import { PaymentProcessor } from "../../infrastructure/backend/payment-processor/payment-processor.interface";
+import { MetricRecorder } from "../../infrastructure/observability/metric-recorder/metric-recorder.interface";
+import { TraceInstrumenter } from "../../infrastructure/observability/trace-instrumenter/trace-instrumenter.interface";
+import { PaymentStorage } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
 import { PaymentRequest } from "./payment-request.dto";
 import { PaymentResponse, StepResponse } from "./payment-response.entity";
 
@@ -19,6 +20,7 @@ export class PaymentService {
         @Inject(AcquirerProcessor) private readonly acquirerProcessor: AcquirerProcessor,
         @Inject(PaymentProcessor) private readonly paymentProcessor: PaymentProcessor,
         @Inject(NotificationSender) private readonly notificationSender: NotificationSender,
+        @Inject(PaymentStorage) private readonly paymentStorage: PaymentStorage,
         @Inject(TraceInstrumenter) private readonly traceInstrumenter: TraceInstrumenter,
         @Inject(MetricRecorder) private readonly metricRecorder: MetricRecorder
     ) {}
@@ -37,6 +39,7 @@ export class PaymentService {
                 paymentResponse.addStep(await this.processPayment());
                 paymentResponse.addStep(await this.sendNotification());
                 paymentResponse.approve();
+                await this.paymentStorage.save(paymentResponse);
                 return paymentResponse;
             });
         } catch (error) {
@@ -51,6 +54,19 @@ export class PaymentService {
                 outcome,
             });
         }
+    }
+
+    async getByTransactionId(transactionId: string): Promise<PaymentResponse> {
+        const payment = await this.paymentStorage.findByTransactionId(transactionId);
+
+        if (!payment) {
+            throw new NotFoundException({
+                code: "PAYMENT_NOT_FOUND",
+                message: "Payment não encontrado",
+            });
+        }
+
+        return payment;
     }
 
     private async validateAccount(): Promise<StepResponse> {

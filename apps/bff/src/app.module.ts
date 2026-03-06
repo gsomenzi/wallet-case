@@ -7,6 +7,7 @@ import { BooleanRandomizerType } from "./infrastructure/boolean-randomizer/boole
 import { BooleanRandomizerModule } from "./infrastructure/boolean-randomizer/boolean-randomizer.module";
 import { DelaySimulatorModule } from "./infrastructure/delay-simulator/delay-simulator.module";
 import { ObservabilityModule } from "./infrastructure/observability/observability.module";
+import { PersistenceModule } from "./infrastructure/persistence/persistence.module";
 
 @Module({
     imports: [
@@ -14,6 +15,7 @@ import { ObservabilityModule } from "./infrastructure/observability/observabilit
         DelaySimulatorModule.forRoot(),
         ObservabilityModule.forRoot(),
         BackendModule,
+        PersistenceModule,
         PaymentModule,
     ],
     providers: [
