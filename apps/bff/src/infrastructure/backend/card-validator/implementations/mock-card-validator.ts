@@ -12,9 +12,11 @@ const MAX_DELAY_MS = 800;
 @Injectable()
 export class MockCardValidator implements CardValidator {
     constructor(
-        @Inject(BooleanRandomizer) private readonly booleanRandomizer: BooleanRandomizer,
+        @Inject(BooleanRandomizer)
+        private readonly booleanRandomizer: BooleanRandomizer,
         @Inject(DelaySimulator) private readonly delaySimulator: DelaySimulator,
-        @Inject(TraceInstrumenter) private readonly traceInstrumenter: TraceInstrumenter,
+        @Inject(TraceInstrumenter)
+        private readonly traceInstrumenter: TraceInstrumenter,
         @Inject(AppLogger) private readonly appLogger: AppLogger
     ) {}
 
@@ -22,13 +24,17 @@ export class MockCardValidator implements CardValidator {
         return await this.traceInstrumenter.usingSpan("card-validation", {}, async () => {
             await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
             if (!this.booleanRandomizer.randomize()) {
-                this.appLogger.error("Card validation failed", { context: "MockCardValidator" });
+                this.appLogger.error("Card validation failed", {
+                    context: "MockCardValidator",
+                });
                 throw new CardValidationFailedError({
                     minDelayMs: MIN_DELAY_MS,
                     maxDelayMs: MAX_DELAY_MS,
                 });
             }
-            this.appLogger.info("Card validation succeeded", { context: "MockCardValidator" });
+            this.appLogger.info("Card validation succeeded", {
+                context: "MockCardValidator",
+            });
             return true;
         });
     }

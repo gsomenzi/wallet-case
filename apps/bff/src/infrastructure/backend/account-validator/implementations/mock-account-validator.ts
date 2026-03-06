@@ -12,9 +12,11 @@ const MAX_DELAY_MS = 730;
 @Injectable()
 export class MockAccountValidator implements AccountValidator {
     constructor(
-        @Inject(BooleanRandomizer) private readonly booleanRandomizer: BooleanRandomizer,
+        @Inject(BooleanRandomizer)
+        private readonly booleanRandomizer: BooleanRandomizer,
         @Inject(DelaySimulator) private readonly delaySimulator: DelaySimulator,
-        @Inject(TraceInstrumenter) private readonly traceInstrumenter: TraceInstrumenter,
+        @Inject(TraceInstrumenter)
+        private readonly traceInstrumenter: TraceInstrumenter,
         @Inject(AppLogger) private readonly appLogger: AppLogger
     ) {}
 
@@ -22,13 +24,17 @@ export class MockAccountValidator implements AccountValidator {
         return await this.traceInstrumenter.usingSpan("account-validation", {}, async () => {
             await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
             if (!this.booleanRandomizer.randomize()) {
-                this.appLogger.error("Account validation failed", { context: "MockAccountValidator" });
+                this.appLogger.error("Account validation failed", {
+                    context: "MockAccountValidator",
+                });
                 throw new AccountValidationFailedError({
                     minDelayMs: MIN_DELAY_MS,
                     maxDelayMs: MAX_DELAY_MS,
                 });
             }
-            this.appLogger.info("Account validation succeeded", { context: "MockAccountValidator" });
+            this.appLogger.info("Account validation succeeded", {
+                context: "MockAccountValidator",
+            });
             return true;
         });
     }

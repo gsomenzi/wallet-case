@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
-import { PaymentStatus } from "../../../features/payment/payment-response.entity";
+import { PaymentStatus } from "../../../features/payment/payment.entity";
 import {
     PaymentWorkflowEvent,
     type PaymentWorkflowEventPayload,
@@ -11,7 +11,8 @@ import { PaymentProcessor, type PaymentProcessor as PaymentProcessorType } from 
 @Injectable()
 export class PaymentProcessingRequestedProcessor {
     constructor(
-        @Inject(PaymentProcessor) private readonly paymentProcessor: PaymentProcessorType,
+        @Inject(PaymentProcessor)
+        private readonly paymentProcessor: PaymentProcessorType,
         private readonly paymentWorkflowCoordinator: PaymentWorkflowCoordinator
     ) {}
 

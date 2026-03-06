@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { PaymentStorage } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
-import { PaymentResponse } from "./payment-response.entity";
+import { Payment } from "./payment.entity";
 import { PaymentUpdatesGateway } from "./payment-updates.gateway";
 
 describe("PaymentUpdatesGateway", () => {
@@ -25,7 +25,7 @@ describe("PaymentUpdatesGateway", () => {
     });
 
     it("should subscribe client to room and emit current payment", async () => {
-        const payment = PaymentResponse.create();
+        const payment = Payment.create();
         paymentStorage.findByTransactionId.mockResolvedValue(payment);
 
         const client = {
@@ -33,7 +33,9 @@ describe("PaymentUpdatesGateway", () => {
             emit: jest.fn(),
         };
 
-        await gateway.handleSubscribe(client as never, { transactionId: payment.transactionId });
+        await gateway.handleSubscribe(client as never, {
+            transactionId: payment.transactionId,
+        });
 
         expect(client.join).toHaveBeenCalledWith(`payment:${payment.transactionId}`);
         expect(client.emit).toHaveBeenCalledWith("payment.updated", payment);

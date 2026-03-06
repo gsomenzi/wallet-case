@@ -1,4 +1,4 @@
-import type { PaymentResponse } from "./payment-response.entity";
+import type { Payment } from "./payment.entity";
 
 export enum PaymentWorkflowEvent {
     PaymentStarted = "payment.workflow.started",
@@ -17,5 +17,5 @@ export type PaymentWorkflowEventPayload = {
 
 export type PaymentUpdatedEventPayload = {
     transactionId: string;
-    payment: PaymentResponse;
+    payment: Payment;
 };

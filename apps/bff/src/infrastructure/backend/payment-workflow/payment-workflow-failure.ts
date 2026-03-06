@@ -1,7 +1,7 @@
 import { ApplicationError } from "../../../application/application-error";
-import { PaymentResponse, PaymentStatus } from "../../../features/payment/payment-response.entity";
+import { Payment, PaymentStatus } from "../../../features/payment/payment.entity";
 
-export function applyWorkflowFailure(payment: PaymentResponse, error: unknown): "declined" | "error" {
+export function applyWorkflowFailure(payment: Payment, error: unknown): "declined" | "error" {
     if (error instanceof ApplicationError) {
         payment.decline({
             code: error.code,

@@ -3,8 +3,8 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { MetricRecorder } from "../../infrastructure/observability/metric-recorder/metric-recorder.interface";
 import { TraceInstrumenter } from "../../infrastructure/observability/trace-instrumenter/trace-instrumenter.interface";
 import { PaymentStorage } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
+import { Payment } from "./payment.entity";
 import { PaymentRequest } from "./payment-request.dto";
-import { PaymentResponse } from "./payment-response.entity";
 import {
     type PaymentUpdatedEventPayload,
     PaymentWorkflowEvent,
@@ -15,28 +15,29 @@ import {
 export class PaymentService {
     constructor(
         @Inject(PaymentStorage) private readonly paymentStorage: PaymentStorage,
-        @Inject(TraceInstrumenter) private readonly traceInstrumenter: TraceInstrumenter,
+        @Inject(TraceInstrumenter)
+        private readonly traceInstrumenter: TraceInstrumenter,
         @Inject(MetricRecorder) private readonly metricRecorder: MetricRecorder,
         private readonly eventEmitter: EventEmitter2
     ) {}
 
-    async executePayment(_paymentRequest: PaymentRequest): Promise<PaymentResponse> {
+    async executePayment(_paymentRequest: PaymentRequest): Promise<Payment> {
         const startedAt = Date.now();
         let outcome: "success" | "error" = "success";
 
         try {
             return await this.traceInstrumenter.usingSpan("payment_execution", {}, async () => {
-                const paymentResponse: PaymentResponse = PaymentResponse.create();
-                const { transactionId } = paymentResponse;
-                await this.paymentStorage.save(paymentResponse);
+                const payment: Payment = Payment.create();
+                const { transactionId } = payment;
+                await this.paymentStorage.save(payment);
                 this.eventEmitter.emit(PaymentWorkflowEvent.PaymentUpdated, {
                     transactionId,
-                    payment: paymentResponse,
+                    payment,
                 } satisfies PaymentUpdatedEventPayload);
                 this.eventEmitter.emit(PaymentWorkflowEvent.PaymentStarted, {
                     transactionId,
                 } satisfies PaymentWorkflowEventPayload);
-                return paymentResponse;
+                return payment;
             });
         } catch (error) {
             outcome = "error";
@@ -52,7 +53,7 @@ export class PaymentService {
         }
     }
 
-    async getByTransactionId(transactionId: string): Promise<PaymentResponse> {
+    async getByTransactionId(transactionId: string): Promise<Payment> {
         const payment = await this.paymentStorage.findByTransactionId(transactionId);
 
         if (!payment) {

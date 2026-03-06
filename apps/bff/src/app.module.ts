@@ -13,7 +13,10 @@ import { PersistenceModule } from "./infrastructure/persistence/persistence.modu
 @Module({
     imports: [
         EventEmitterModule.forRoot(),
-        BooleanRandomizerModule.forRoot({ type: BooleanRandomizerType.Default, trueProbability: 0.9 }),
+        BooleanRandomizerModule.forRoot({
+            type: BooleanRandomizerType.Default,
+            trueProbability: 0.9,
+        }),
         DelaySimulatorModule.forRoot(),
         ObservabilityModule.forRoot(),
         BackendModule,

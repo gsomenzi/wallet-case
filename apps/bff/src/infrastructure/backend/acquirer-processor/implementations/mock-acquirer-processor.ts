@@ -12,9 +12,11 @@ const MAX_DELAY_MS = 2500;
 @Injectable()
 export class MockAcquirerProcessor implements AcquirerProcessor {
     constructor(
-        @Inject(BooleanRandomizer) private readonly booleanRandomizer: BooleanRandomizer,
+        @Inject(BooleanRandomizer)
+        private readonly booleanRandomizer: BooleanRandomizer,
         @Inject(DelaySimulator) private readonly delaySimulator: DelaySimulator,
-        @Inject(TraceInstrumenter) private readonly traceInstrumenter: TraceInstrumenter,
+        @Inject(TraceInstrumenter)
+        private readonly traceInstrumenter: TraceInstrumenter,
         @Inject(AppLogger) private readonly appLogger: AppLogger
     ) {}
 
@@ -22,13 +24,17 @@ export class MockAcquirerProcessor implements AcquirerProcessor {
         return await this.traceInstrumenter.usingSpan("acquirer-processing", {}, async () => {
             await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
             if (!this.booleanRandomizer.randomize()) {
-                this.appLogger.error("Acquirer processing failed", { context: "MockAcquirerProcessor" });
+                this.appLogger.error("Acquirer processing failed", {
+                    context: "MockAcquirerProcessor",
+                });
                 throw new AcquirerProcessingFailedError({
                     minDelayMs: MIN_DELAY_MS,
                     maxDelayMs: MAX_DELAY_MS,
                 });
             }
-            this.appLogger.info("Acquirer processing succeeded", { context: "MockAcquirerProcessor" });
+            this.appLogger.info("Acquirer processing succeeded", {
+                context: "MockAcquirerProcessor",
+            });
             return true;
         });
     }

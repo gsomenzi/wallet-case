@@ -21,7 +21,10 @@ const PAYMENT_UPDATED_EVENT = "payment.updated";
 const PAYMENT_SUBSCRIBE_EVENT = "payment.subscribe";
 
 @Injectable()
-@WebSocketGateway({ namespace: PAYMENT_GATEWAY_NAMESPACE, cors: { origin: "*" } })
+@WebSocketGateway({
+    namespace: PAYMENT_GATEWAY_NAMESPACE,
+    cors: { origin: "*" },
+})
 export class PaymentUpdatesGateway implements OnGatewayInit {
     @WebSocketServer()
     private server!: Server;

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { PaymentStatus } from "../../../features/payment/payment-response.entity";
+import { PaymentStatus } from "../../../features/payment/payment.entity";
 import { PaymentWorkflowCoordinator } from "../payment-workflow/payment-workflow-coordinator.service";
 import { NotificationRequestedProcessor } from "./notification-requested.processor";
 import { NotificationSender } from "./notification-sender.interface";

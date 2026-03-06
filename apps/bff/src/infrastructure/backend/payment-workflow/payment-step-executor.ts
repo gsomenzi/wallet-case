@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { ApplicationError } from "../../../application/application-error";
-import { type StepResponse } from "../../../features/payment/payment-response.entity";
+import { type StepResponse } from "../../../features/payment/payment.entity";
 import { MetricRecorder } from "../../observability/metric-recorder/metric-recorder.interface";
 
 export type RetryPolicy = {
@@ -22,10 +22,30 @@ const DEFAULT_RETRY_POLICY: RetryPolicy = {
 const RETRY_POLICY_BY_STEP: Record<string, Partial<RetryPolicy>> = {
     account_validation: { maxAttempts: 1 },
     card_validation: { maxAttempts: 1 },
-    antifraud_validation: { maxAttempts: 3, initialDelayMs: 120, jitterMs: 80, timeoutMs: 3000 },
-    acquirer_processing: { maxAttempts: 3, initialDelayMs: 180, jitterMs: 120, timeoutMs: 4000 },
-    payment: { maxAttempts: 3, initialDelayMs: 200, jitterMs: 130, timeoutMs: 4000 },
-    notification: { maxAttempts: 3, initialDelayMs: 100, jitterMs: 70, timeoutMs: 2500 },
+    antifraud_validation: {
+        maxAttempts: 3,
+        initialDelayMs: 120,
+        jitterMs: 80,
+        timeoutMs: 3000,
+    },
+    acquirer_processing: {
+        maxAttempts: 3,
+        initialDelayMs: 180,
+        jitterMs: 120,
+        timeoutMs: 4000,
+    },
+    payment: {
+        maxAttempts: 3,
+        initialDelayMs: 200,
+        jitterMs: 130,
+        timeoutMs: 4000,
+    },
+    notification: {
+        maxAttempts: 3,
+        initialDelayMs: 100,
+        jitterMs: 70,
+        timeoutMs: 2500,
+    },
 };
 
 type ExecuteStepWithResilienceInput = {

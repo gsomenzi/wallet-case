@@ -12,9 +12,11 @@ const MAX_DELAY_MS = 1500;
 @Injectable()
 export class MockAntiFraudValidator implements AntiFraudValidator {
     constructor(
-        @Inject(BooleanRandomizer) private readonly booleanRandomizer: BooleanRandomizer,
+        @Inject(BooleanRandomizer)
+        private readonly booleanRandomizer: BooleanRandomizer,
         @Inject(DelaySimulator) private readonly delaySimulator: DelaySimulator,
-        @Inject(TraceInstrumenter) private readonly traceInstrumenter: TraceInstrumenter,
+        @Inject(TraceInstrumenter)
+        private readonly traceInstrumenter: TraceInstrumenter,
         @Inject(AppLogger) private readonly appLogger: AppLogger
     ) {}
 
@@ -22,13 +24,17 @@ export class MockAntiFraudValidator implements AntiFraudValidator {
         return await this.traceInstrumenter.usingSpan("anti-fraud-validation", {}, async () => {
             await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
             if (!this.booleanRandomizer.randomize()) {
-                this.appLogger.warn("Anti-fraud validation failed", { context: "MockAntiFraudValidator" });
+                this.appLogger.warn("Anti-fraud validation failed", {
+                    context: "MockAntiFraudValidator",
+                });
                 throw new AntiFraudValidationFailedError({
                     minDelayMs: MIN_DELAY_MS,
                     maxDelayMs: MAX_DELAY_MS,
                 });
             }
-            this.appLogger.info("Anti-fraud validation succeeded", { context: "MockAntiFraudValidator" });
+            this.appLogger.info("Anti-fraud validation succeeded", {
+                context: "MockAntiFraudValidator",
+            });
             return true;
         });
     }

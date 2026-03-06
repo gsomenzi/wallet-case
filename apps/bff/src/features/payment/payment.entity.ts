@@ -24,7 +24,7 @@ export enum PaymentStatus {
     Error = "error",
 }
 
-export class PaymentResponse {
+export class Payment {
     status: PaymentStatus;
     transactionId: string;
     totalTimeMs: number;
@@ -45,8 +45,8 @@ export class PaymentResponse {
         this.failure = failure;
     }
 
-    static create(): PaymentResponse {
-        return new PaymentResponse(PaymentStatus.Pending, randomUUID(), 0, []);
+    static create(): Payment {
+        return new Payment(PaymentStatus.Pending, randomUUID(), 0, []);
     }
 
     addStep(step: StepResponse) {

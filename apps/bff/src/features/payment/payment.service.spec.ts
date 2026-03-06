@@ -4,9 +4,9 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { MetricRecorder } from "../../infrastructure/observability/metric-recorder/metric-recorder.interface";
 import { TraceInstrumenter } from "../../infrastructure/observability/trace-instrumenter/trace-instrumenter.interface";
 import { PaymentStorage } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
+import { Payment, PaymentStatus } from "./payment.entity";
 import { PaymentService } from "./payment.service";
 import { PaymentRequest } from "./payment-request.dto";
-import { PaymentResponse, PaymentStatus } from "./payment-response.entity";
 import { PaymentWorkflowEvent } from "./payment-workflow.events";
 
 describe("PaymentService", () => {
@@ -54,7 +54,10 @@ describe("PaymentService", () => {
         }).compile();
 
         service = testingModule.get<PaymentService>(PaymentService);
-        paymentStorage = testingModule.get<{ save: jest.Mock; findByTransactionId: jest.Mock }>(PaymentStorage);
+        paymentStorage = testingModule.get<{
+            save: jest.Mock;
+            findByTransactionId: jest.Mock;
+        }>(PaymentStorage);
         eventEmitter = testingModule.get<{ emit: jest.Mock }>(EventEmitter2);
     });
 
@@ -73,7 +76,7 @@ describe("PaymentService", () => {
         const response = await service.executePayment(request);
 
         expect(response).toBeDefined();
-        expect(response).toBeInstanceOf(PaymentResponse);
+        expect(response).toBeInstanceOf(Payment);
         expect(response.status).toBe(PaymentStatus.Pending);
         expect(response.transactionId).toBeDefined();
         expect(response.totalTimeMs).toBe(0);
@@ -89,7 +92,7 @@ describe("PaymentService", () => {
     });
 
     it("should return payment when found by transactionId", async () => {
-        const payment = PaymentResponse.create();
+        const payment = Payment.create();
         payment.approve();
         paymentStorage.findByTransactionId.mockResolvedValue(payment);
 

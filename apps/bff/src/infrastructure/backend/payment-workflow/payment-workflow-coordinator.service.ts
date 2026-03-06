@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { type PaymentResponse, PaymentStatus } from "../../../features/payment/payment-response.entity";
+import { type Payment, PaymentStatus } from "../../../features/payment/payment.entity";
 import {
     type PaymentUpdatedEventPayload,
     PaymentWorkflowEvent,
@@ -29,7 +29,8 @@ type ExecuteStepInput = {
 export class PaymentWorkflowCoordinator {
     constructor(
         @Inject(PaymentStorage) private readonly paymentStorage: PaymentStorage,
-        @Inject(TraceInstrumenter) private readonly traceInstrumenter: TraceInstrumenter,
+        @Inject(TraceInstrumenter)
+        private readonly traceInstrumenter: TraceInstrumenter,
         @Inject(MetricRecorder) private readonly metricRecorder: MetricRecorder,
         private readonly paymentStepExecutor: PaymentStepExecutor,
         private readonly eventEmitter: EventEmitter2
@@ -126,7 +127,7 @@ export class PaymentWorkflowCoordinator {
         });
     }
 
-    private publishPaymentUpdated(transactionId: string, payment: PaymentResponse): void {
+    private publishPaymentUpdated(transactionId: string, payment: Payment): void {
         this.eventEmitter.emit(PaymentWorkflowEvent.PaymentUpdated, {
             transactionId,
             payment,

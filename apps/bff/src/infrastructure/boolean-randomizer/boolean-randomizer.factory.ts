@@ -11,7 +11,9 @@ export type CreateBooleanRandomizerOptions = {
 };
 
 export function createBooleanRandomizer(
-    options: CreateBooleanRandomizerOptions = { type: BooleanRandomizerType.Default }
+    options: CreateBooleanRandomizerOptions = {
+        type: BooleanRandomizerType.Default,
+    }
 ): BooleanRandomizer {
     switch (options.type) {
         case BooleanRandomizerType.Default:

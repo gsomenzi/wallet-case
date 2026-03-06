@@ -12,9 +12,11 @@ const MAX_DELAY_MS = 1250;
 @Injectable()
 export class MockPaymentProcessor implements PaymentProcessor {
     constructor(
-        @Inject(BooleanRandomizer) private readonly booleanRandomizer: BooleanRandomizer,
+        @Inject(BooleanRandomizer)
+        private readonly booleanRandomizer: BooleanRandomizer,
         @Inject(DelaySimulator) private readonly delaySimulator: DelaySimulator,
-        @Inject(TraceInstrumenter) private readonly traceInstrumenter: TraceInstrumenter,
+        @Inject(TraceInstrumenter)
+        private readonly traceInstrumenter: TraceInstrumenter,
         @Inject(AppLogger) private readonly appLogger: AppLogger
     ) {}
 
@@ -22,13 +24,17 @@ export class MockPaymentProcessor implements PaymentProcessor {
         return await this.traceInstrumenter.usingSpan("payment-processing", {}, async () => {
             await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
             if (!this.booleanRandomizer.randomize()) {
-                this.appLogger.error("Payment processing failed", { context: "MockPaymentProcessor" });
+                this.appLogger.error("Payment processing failed", {
+                    context: "MockPaymentProcessor",
+                });
                 throw new PaymentProcessingFailedError({
                     minDelayMs: MIN_DELAY_MS,
                     maxDelayMs: MAX_DELAY_MS,
                 });
             }
-            this.appLogger.info("Payment processed successfully", { context: "MockPaymentProcessor" });
+            this.appLogger.info("Payment processed successfully", {
+                context: "MockPaymentProcessor",
+            });
         });
     }
 }

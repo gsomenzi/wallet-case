@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
-import { PaymentStatus } from "../../../features/payment/payment-response.entity";
+import { PaymentStatus } from "../../../features/payment/payment.entity";
 import {
     PaymentWorkflowEvent,
     type PaymentWorkflowEventPayload,
@@ -11,7 +11,8 @@ import { NotificationSender, type NotificationSender as NotificationSenderType }
 @Injectable()
 export class NotificationRequestedProcessor {
     constructor(
-        @Inject(NotificationSender) private readonly notificationSender: NotificationSenderType,
+        @Inject(NotificationSender)
+        private readonly notificationSender: NotificationSenderType,
         private readonly paymentWorkflowCoordinator: PaymentWorkflowCoordinator
     ) {}
 

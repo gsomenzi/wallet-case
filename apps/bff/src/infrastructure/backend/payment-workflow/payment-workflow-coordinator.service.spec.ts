@@ -2,7 +2,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, TestingModule } from "@nestjs/testing";
 import { AccountValidationFailedError } from "../../../application/application-errors/account-validation-error";
 import { PaymentProcessingFailedError } from "../../../application/application-errors/payment-processing-error";
-import { PaymentResponse, PaymentStatus } from "../../../features/payment/payment-response.entity";
+import { Payment, PaymentStatus } from "../../../features/payment/payment.entity";
 import { PaymentWorkflowEvent } from "../../../features/payment/payment-workflow.events";
 import { MetricRecorder } from "../../observability/metric-recorder/metric-recorder.interface";
 import { TraceInstrumenter } from "../../observability/trace-instrumenter/trace-instrumenter.interface";
@@ -60,7 +60,7 @@ describe("PaymentWorkflowCoordinator", () => {
     });
 
     it("should retry step when failure is retryable and then succeed", async () => {
-        const payment = PaymentResponse.create();
+        const payment = Payment.create();
         paymentStorage.findByTransactionId.mockResolvedValue(payment);
 
         const action = jest
@@ -86,7 +86,7 @@ describe("PaymentWorkflowCoordinator", () => {
     });
 
     it("should fail payment without retry for non-retryable errors", async () => {
-        const payment = PaymentResponse.create();
+        const payment = Payment.create();
         paymentStorage.findByTransactionId.mockResolvedValue(payment);
 
         const action = jest.fn().mockRejectedValue(new AccountValidationFailedError({ reason: "business" }));
@@ -109,7 +109,7 @@ describe("PaymentWorkflowCoordinator", () => {
     });
 
     it("should skip duplicated step execution and emit next event", async () => {
-        const payment = PaymentResponse.create();
+        const payment = Payment.create();
         payment.addStep({ step: "card_validation", timeMs: 10 });
         paymentStorage.findByTransactionId.mockResolvedValue(payment);
 
@@ -130,7 +130,7 @@ describe("PaymentWorkflowCoordinator", () => {
     });
 
     it("should continue flow on non-blocking failure", async () => {
-        const payment = PaymentResponse.create();
+        const payment = Payment.create();
         paymentStorage.findByTransactionId.mockResolvedValue(payment);
 
         const action = jest.fn().mockRejectedValue(new PaymentProcessingFailedError({ reason: "transient" }));

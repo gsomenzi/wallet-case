@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
-import { PaymentStatus } from "../../../features/payment/payment-response.entity";
+import { PaymentStatus } from "../../../features/payment/payment.entity";
 import {
     PaymentWorkflowEvent,
     type PaymentWorkflowEventPayload,
@@ -14,7 +14,8 @@ import {
 @Injectable()
 export class AntifraudValidationRequestedProcessor {
     constructor(
-        @Inject(AntiFraudValidator) private readonly antiFraudValidator: AntiFraudValidatorType,
+        @Inject(AntiFraudValidator)
+        private readonly antiFraudValidator: AntiFraudValidatorType,
         private readonly paymentWorkflowCoordinator: PaymentWorkflowCoordinator
     ) {}
 
