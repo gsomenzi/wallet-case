@@ -25,6 +25,7 @@ export class MockPaymentProcessor implements PaymentProcessor {
             await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
             if (!this.booleanRandomizer.randomize()) {
                 this.appLogger.error("Payment processing failed", {
+                    event: "payment_processing_failed",
                     context: "MockPaymentProcessor",
                 });
                 throw new PaymentProcessingFailedError({
@@ -33,6 +34,7 @@ export class MockPaymentProcessor implements PaymentProcessor {
                 });
             }
             this.appLogger.info("Payment processed successfully", {
+                event: "payment_processing_succeeded",
                 context: "MockPaymentProcessor",
             });
         });

@@ -25,6 +25,7 @@ export class MockAcquirerProcessor implements AcquirerProcessor {
             await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
             if (!this.booleanRandomizer.randomize()) {
                 this.appLogger.error("Acquirer processing failed", {
+                    event: "acquirer_processing_failed",
                     context: "MockAcquirerProcessor",
                 });
                 throw new AcquirerProcessingFailedError({
@@ -33,6 +34,7 @@ export class MockAcquirerProcessor implements AcquirerProcessor {
                 });
             }
             this.appLogger.info("Acquirer processing succeeded", {
+                event: "acquirer_processing_succeeded",
                 context: "MockAcquirerProcessor",
             });
             return true;

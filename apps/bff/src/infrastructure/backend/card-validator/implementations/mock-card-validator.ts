@@ -25,6 +25,7 @@ export class MockCardValidator implements CardValidator {
             await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
             if (!this.booleanRandomizer.randomize()) {
                 this.appLogger.error("Card validation failed", {
+                    event: "card_validation_failed",
                     context: "MockCardValidator",
                 });
                 throw new CardValidationFailedError({
@@ -33,6 +34,7 @@ export class MockCardValidator implements CardValidator {
                 });
             }
             this.appLogger.info("Card validation succeeded", {
+                event: "card_validation_succeeded",
                 context: "MockCardValidator",
             });
             return true;

@@ -26,6 +26,8 @@ export class OtelAppLogger implements AppLogger {
         const span = trace.getSpan(activeContext) ?? trace.getActiveSpan();
         const spanContext = span?.spanContext();
         const hasActiveSpan = !!spanContext && isSpanContextValid(spanContext);
+        const { event, ...remainingContext } = context ?? {};
+        const eventName = this.resolveEventName(event, message);
 
         this.logger.emit({
             context: activeContext,
@@ -33,11 +35,32 @@ export class OtelAppLogger implements AppLogger {
             body: message,
             attributes: {
                 service: process.env.OTEL_SERVICE_NAME ?? "bff",
+                level: level.toLowerCase(),
+                event_name: eventName,
+                "loki.attribute.labels": "service,level,event_name,context",
                 has_active_span: hasActiveSpan,
                 trace_id: spanContext?.traceId,
                 span_id: spanContext?.spanId,
-                ...context,
+                ...remainingContext,
             },
         });
+    }
+
+    private resolveEventName(event: unknown, message: string): string {
+        if (typeof event === "string" && event.trim().length > 0) {
+            return this.normalizeEventName(event);
+        }
+
+        return this.normalizeEventName(message);
+    }
+
+    private normalizeEventName(value: string): string {
+        return value
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/^_+|_+$/g, "")
+            .replace(/_{2,}/g, "_");
     }
 }

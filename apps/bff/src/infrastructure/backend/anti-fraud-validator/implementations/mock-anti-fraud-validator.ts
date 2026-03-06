@@ -25,6 +25,7 @@ export class MockAntiFraudValidator implements AntiFraudValidator {
             await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
             if (!this.booleanRandomizer.randomize()) {
                 this.appLogger.warn("Anti-fraud validation failed", {
+                    event: "anti_fraud_validation_failed",
                     context: "MockAntiFraudValidator",
                 });
                 throw new AntiFraudValidationFailedError({
@@ -33,6 +34,7 @@ export class MockAntiFraudValidator implements AntiFraudValidator {
                 });
             }
             this.appLogger.info("Anti-fraud validation succeeded", {
+                event: "anti_fraud_validation_succeeded",
                 context: "MockAntiFraudValidator",
             });
             return true;

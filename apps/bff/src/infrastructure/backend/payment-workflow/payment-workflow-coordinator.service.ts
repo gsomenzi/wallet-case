@@ -120,6 +120,7 @@ export class PaymentWorkflowCoordinator {
     async completeAsApproved(event: PaymentWorkflowEventPayload): Promise<void> {
         const payment = await this.paymentStorage.findByTransactionId(event.transactionId);
         if (!payment) return;
+        if (isTerminalStatus(payment.status)) return;
 
         payment.approve();
         await this.paymentStorage.save(payment);

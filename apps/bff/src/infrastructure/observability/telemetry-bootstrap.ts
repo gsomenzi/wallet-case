@@ -5,9 +5,10 @@ import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { resourceFromAttributes } from "@opentelemetry/resources";
-import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs";
+import { LoggerProvider, SimpleLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NodeSDK } from "@opentelemetry/sdk-node";
+import { SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import {
     ATTR_SERVICE_NAME,
     ATTR_SERVICE_NAMESPACE,
@@ -23,14 +24,16 @@ const resource = resourceFromAttributes({
 
 const sdk = new NodeSDK({
     resource,
-    traceExporter: new OTLPTraceExporter({
-        url: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT ?? "http://localhost:4318/v1/traces",
-    }),
+    spanProcessor: new SimpleSpanProcessor(
+        new OTLPTraceExporter({
+            url: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT ?? "http://localhost:4318/v1/traces",
+        })
+    ),
     metricReader: new PeriodicExportingMetricReader({
         exporter: new OTLPMetricExporter({
             url: process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT ?? "http://localhost:4318/v1/metrics",
         }),
-        exportIntervalMillis: Number(process.env.OTEL_METRIC_EXPORT_INTERVAL_MS ?? "10000"),
+        exportIntervalMillis: Number(process.env.OTEL_METRIC_EXPORT_INTERVAL_MS ?? "1000"),
     }),
     instrumentations: [getNodeAutoInstrumentations()],
 });
@@ -46,7 +49,7 @@ export async function startTelemetry(): Promise<void> {
     loggerProvider = new LoggerProvider({
         resource,
         processors: [
-            new BatchLogRecordProcessor(
+            new SimpleLogRecordProcessor(
                 new OTLPLogExporter({
                     url: process.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT ?? "http://localhost:4318/v1/logs",
                 })

@@ -25,6 +25,7 @@ export class MockNotificationSender implements NotificationSender {
             await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
             if (!this.booleanRandomizer.randomize()) {
                 this.appLogger.error("Notification sending failed", {
+                    event: "notification_sending_failed",
                     context: "MockNotificationSender",
                 });
                 throw new NotificationSendingFailedError({
@@ -33,6 +34,7 @@ export class MockNotificationSender implements NotificationSender {
                 });
             }
             this.appLogger.info("Notification sent successfully", {
+                event: "notification_sending_succeeded",
                 context: "MockNotificationSender",
             });
         });

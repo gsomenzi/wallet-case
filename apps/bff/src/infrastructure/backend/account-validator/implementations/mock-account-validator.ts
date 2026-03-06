@@ -25,6 +25,7 @@ export class MockAccountValidator implements AccountValidator {
             await this.delaySimulator.simulate(MIN_DELAY_MS, MAX_DELAY_MS);
             if (!this.booleanRandomizer.randomize()) {
                 this.appLogger.error("Account validation failed", {
+                    event: "account_validation_failed",
                     context: "MockAccountValidator",
                 });
                 throw new AccountValidationFailedError({
@@ -33,6 +34,7 @@ export class MockAccountValidator implements AccountValidator {
                 });
             }
             this.appLogger.info("Account validation succeeded", {
+                event: "account_validation_succeeded",
                 context: "MockAccountValidator",
             });
             return true;

@@ -63,9 +63,10 @@ export class PaymentStepExecutor {
         const startedAt = Date.now();
         let outcome: "success" | "error" = "success";
         const resolvedRetryPolicy = resolveRetryPolicy(step, input.retryPolicy);
+        const retryEnabled = resolvedRetryPolicy.maxAttempts > 1;
 
         try {
-            await runActionWithRetry(step, action, resolvedRetryPolicy, this.metricRecorder);
+            await runActionWithRetry(step, action, resolvedRetryPolicy, this.metricRecorder, retryEnabled);
             return { step, timeMs: Date.now() - startedAt };
         } catch (error) {
             outcome = "error";
@@ -75,10 +76,12 @@ export class PaymentStepExecutor {
             this.metricRecorder.recordHistogram("payment_step_duration_ms", durationMs, {
                 step,
                 outcome,
+                retry_enabled: retryEnabled,
             });
             this.metricRecorder.incrementCounter("payment_step_total", 1, {
                 step,
                 outcome,
+                retry_enabled: retryEnabled,
             });
         }
     }
@@ -96,7 +99,8 @@ async function runActionWithRetry(
     step: string,
     action: () => Promise<unknown>,
     retryPolicy: RetryPolicy,
-    metricRecorder: MetricRecorder
+    metricRecorder: MetricRecorder,
+    retryEnabled: boolean
 ): Promise<void> {
     let attempt = 0;
     let nextDelayMs = retryPolicy.initialDelayMs;
@@ -110,6 +114,7 @@ async function runActionWithRetry(
                 step,
                 attempt,
                 outcome: "success",
+                retry_enabled: retryEnabled,
             });
             return;
         } catch (error) {
@@ -121,6 +126,7 @@ async function runActionWithRetry(
                 attempt,
                 outcome: "error",
                 retryable,
+                retry_enabled: retryEnabled,
             });
 
             if (!canRetry) {
@@ -129,6 +135,7 @@ async function runActionWithRetry(
 
             metricRecorder.incrementCounter("payment_step_retry_total", 1, {
                 step,
+                retry_enabled: retryEnabled,
             });
 
             await sleep(getJitteredDelay(nextDelayMs, retryPolicy.jitterMs));

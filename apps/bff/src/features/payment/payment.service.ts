@@ -41,7 +41,7 @@ export class PaymentService {
             outcome = "error";
             throw error;
         } finally {
-            this.metricRecorder.recordHistogram("payment_execution_duration_ms", Date.now() - startedAt, {
+            this.metricRecorder.recordHistogram("payment_creation_duration_ms", Date.now() - startedAt, {
                 action: "payment_creation",
                 outcome,
             });

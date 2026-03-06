@@ -15,6 +15,7 @@ describe("PaymentWorkflowCoordinator", () => {
     let coordinator: PaymentWorkflowCoordinator;
     let paymentStorage: { save: jest.Mock; findByTransactionId: jest.Mock };
     let paymentWorkflowQueueService: { enqueue: jest.Mock };
+    let metricRecorder: { recordHistogram: jest.Mock; incrementCounter: jest.Mock };
 
     beforeEach(async () => {
         const testingModule: TestingModule = await Test.createTestingModule({
@@ -64,6 +65,7 @@ describe("PaymentWorkflowCoordinator", () => {
         coordinator = testingModule.get(PaymentWorkflowCoordinator);
         paymentStorage = testingModule.get(PaymentStorage);
         paymentWorkflowQueueService = testingModule.get(PaymentWorkflowQueueService);
+        metricRecorder = testingModule.get(MetricRecorder);
     });
 
     it("should retry step when failure is retryable and then succeed", async () => {
@@ -179,5 +181,19 @@ describe("PaymentWorkflowCoordinator", () => {
 
         expect(payment.status).toBe(PaymentStatus.ProcessingPayment);
         expect(payment.failure).toBeUndefined();
+    });
+
+    it("should not complete approved payment twice", async () => {
+        const payment = Payment.create();
+        paymentStorage.findByTransactionId.mockResolvedValue(payment);
+
+        await coordinator.completeAsApproved({ transactionId: payment.transactionId });
+        await coordinator.completeAsApproved({ transactionId: payment.transactionId });
+
+        expect(paymentStorage.save).toHaveBeenCalledTimes(1);
+        expect(metricRecorder.incrementCounter).toHaveBeenCalledWith("payment_total", 1, {
+            outcome: "success",
+        });
+        expect(metricRecorder.incrementCounter).toHaveBeenCalledTimes(1);
     });
 });
