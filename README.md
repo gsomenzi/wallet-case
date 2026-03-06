@@ -144,89 +144,224 @@ Motivação:
 
 ## Observabilidade (local)
 
-Esta seção descreve como subir uma stack de observabilidade local composta por **Grafana**, **Prometheus**, **Loki**, **Tempo** e **OpenTelemetry Collector**, pronta para ser integrada ao BFF quando o desenvolvedor desejar adicionar instrumentação.
+O projeto já possui observabilidade implementada no BFF e stack local provisionada com:
 
-### Pré-requisitos
+- **OpenTelemetry Collector** (ponto central de ingestão)
+- **Tempo** (traces)
+- **Prometheus** (métricas)
+- **Loki** (logs)
+- **Grafana** (visualização e correlação)
 
-- [Docker](https://docs.docker.com/get-docker/) (versão 20.10+) com o plugin **Compose** (incluso no Docker Desktop).
+### Ambiente e arquitetura
 
-> **Nota Linux:** O serviço Prometheus usa `host.docker.internal` para alcançar o BFF rodando fora do Docker. No Linux, adicione a seguinte entrada no serviço `prometheus` do `observability/docker-compose.yml`:
->
-> ```yaml
-> extra_hosts:
->   - "host.docker.internal:host-gateway"
-> ```
+Todos os serviços sobem via `observability/docker-compose.yml` em uma rede bridge `observability`.
 
-### Subir a stack
+Serviços e portas:
+
+- Grafana: `localhost:3001`
+- Prometheus: `localhost:9090`
+- Loki: `localhost:3100`
+- Tempo: `localhost:3200`
+- OTel Collector:
+   - OTLP gRPC: `localhost:4317`
+   - OTLP HTTP: `localhost:4318`
+   - Métricas internas: `localhost:8888`
+   - Health check: `localhost:13133`
+
+### Fluxo de dados (trace, span, metric, log)
+
+```text
+BFF (Node + OTel SDK)
+   ├─ traces/spans  ──OTLP──> OTel Collector ──> Tempo ──> Grafana
+   ├─ metrics       ──OTLP──> OTel Collector ──> Prometheus (remote_write) ──> Grafana
+   └─ logs          ──OTLP──> OTel Collector ──> Loki ──> Grafana
+```
+
+```mermaid
+flowchart LR
+   BFF[BFF\nNode + OpenTelemetry SDK]
+   COL[OpenTelemetry Collector]
+   TMP[Tempo]
+   PRM[Prometheus]
+   LOK[Loki]
+   GRA[Grafana]
+
+   BFF -->|OTLP traces/spans| COL
+   BFF -->|OTLP metrics| COL
+   BFF -->|OTLP logs| COL
+
+   COL -->|traces pipeline| TMP
+   COL -->|metrics pipeline\nremote_write| PRM
+   COL -->|logs pipeline| LOK
+
+   TMP --> GRA
+   PRM --> GRA
+   LOK --> GRA
+```
+
+Detalhes importantes:
+
+- O Collector recebe OTLP por HTTP (`4318`) e gRPC (`4317`).
+- O pipeline de **traces** exporta para `tempo:4317`.
+- O pipeline de **metrics** exporta para `prometheus:9090/api/v1/write` (remote write).
+- O pipeline de **logs** exporta para `loki:3100/loki/api/v1/push`.
+- O Prometheus está configurado para scrape das próprias métricas (`localhost:9090`) e das métricas internas do Collector (`otel-collector:8888`).
+
+### Como subir e validar
 
 ```bash
 cd observability/
 docker compose up -d
+docker compose ps
 ```
 
-Aguarde todos os containers ficarem saudáveis (verifique com `docker compose ps`).
-
-### URLs úteis
-
-| Serviço              | URL                          | Credenciais     |
-| -------------------- | ---------------------------- | --------------- |
-| Grafana              | <http://localhost:3001>      | admin / admin   |
-| Prometheus           | <http://localhost:9090>      | —               |
-| Loki                 | <http://localhost:3100>      | —               |
-| Tempo (HTTP API)     | <http://localhost:3200>      | —               |
-| OTel Collector OTLP  | grpc `localhost:4317` / http `localhost:4318` | — |
-
-O Grafana já vem com os datasources **Prometheus**, **Loki** e **Tempo** pré-configurados via provisioning automático.
-
-### Como instrumentar o BFF futuramente
-
-As seções abaixo descrevem como o BFF poderá ser instrumentado. **Nenhuma modificação de código é necessária agora.**
-
-#### Métricas (Prometheus)
-
-1. Instale `@nestjs/terminus` ou uma biblioteca como `prom-client` no BFF.
-2. Exponha um endpoint `GET /metrics` no formato Prometheus.
-3. O Prometheus já está configurado para fazer scrape em `host.docker.internal:3000/metrics` (arquivo `observability/prometheus.yml`).
-
-#### Traces (OpenTelemetry → Tempo)
-
-1. Instale o SDK OTLP para Node.js no BFF:
-
-   ```bash
-   npm install @opentelemetry/sdk-node @opentelemetry/exporter-trace-otlp-http
-   ```
-
-2. Configure o exporter apontando para o OTel Collector:
-
-   ```ts
-   // Exemplo simplificado
-   const exporter = new OTLPTraceExporter({ url: 'http://localhost:4318/v1/traces' });
-   ```
-
-3. O Collector está configurado para encaminhar os traces ao **Tempo** automaticamente.
-
-#### Logs (Loki)
-
-Enquanto o BFF rodar via `npm run dev:bff` fora do Docker, o **Promtail** não conseguirá coletar os logs automaticamente.
-
-Opções futuras:
-
-- **Containerizar o BFF** — quando o BFF rodar como container Docker, o Promtail (já configurado em `observability/promtail-config.yml`) coletará os logs automaticamente via Docker socket.
-- **Push direto via OTLP** — configure o SDK do OpenTelemetry para enviar logs via OTLP HTTP (`http://localhost:4318/v1/logs`). O Collector encaminhará ao Loki.
-- **Winston + transport HTTP** — use um transport HTTP do Winston para enviar logs em JSON diretamente à API do Loki em `http://localhost:3100/loki/api/v1/push`.
-
-### Derrubar a stack
+Para derrubar:
 
 ```bash
-cd observability/
 docker compose down
 ```
 
-Para remover também os volumes persistentes (dados do Prometheus, Loki e Tempo):
+Para derrubar removendo volumes:
 
 ```bash
 docker compose down -v
 ```
+
+### Como a observabilidade está implementada no BFF
+
+No BFF, a integração segue um padrão de **abstração + implementação OpenTelemetry**, acoplado ao Nest via **módulo global**.
+
+#### 1) Bootstrap de telemetria
+
+- `apps/bff/src/infrastructure/observability/telemetry-bootstrap.ts`
+   - Inicializa `NodeSDK` com auto-instrumentação.
+   - Configura exporters OTLP de trace, metric e logs.
+   - Define `resource` (`service.name`, `service.namespace`, `deployment.environment`).
+- `apps/bff/src/main.ts`
+   - Executa `startTelemetry()` antes de subir o Nest.
+   - Executa `shutdownTelemetry()` no encerramento (`SIGINT`/`SIGTERM`).
+
+#### 2) Abstrações de domínio para observabilidade
+
+Contratos:
+
+- `AppLogger` (info/warn/error)
+- `TraceInstrumenter` (`usingSpan`)
+- `MetricRecorder` (`incrementCounter`/`recordHistogram`)
+
+Implementações OTel:
+
+- `OtelAppLogger`
+- `OtelTraceInstrumenter`
+- `OtelMetricRecorder`
+
+#### 3) Integração global no Nest
+
+`ObservabilityModule.forRoot()` registra e exporta os três contratos como providers globais:
+
+- `AppLogger -> OtelAppLogger`
+- `TraceInstrumenter -> OtelTraceInstrumenter`
+- `MetricRecorder -> OtelMetricRecorder`
+
+Esse módulo é importado em `AppModule`, permitindo injeção em qualquer feature/provider sem wiring repetitivo.
+
+### Exemplos de implementação no código
+
+#### Exemplo de tracing com `usingSpan`
+
+No fluxo de pagamento (`PaymentService`):
+
+```ts
+return await this.traceInstrumenter.usingSpan("payment_execution", {}, async () => {
+   // execução do fluxo
+});
+```
+
+#### Exemplo de métricas (counter + histogram)
+
+No mesmo serviço:
+
+```ts
+this.metricRecorder.recordHistogram("payment_execution_duration_ms", durationMs, {
+   action: "payment_execution",
+   outcome,
+});
+
+this.metricRecorder.incrementCounter("payment_total", 1, { outcome });
+```
+
+E por step:
+
+```ts
+this.metricRecorder.recordHistogram("payment_step_duration_ms", durationMs, { step, outcome });
+this.metricRecorder.incrementCounter("payment_step_total", 1, { step, outcome });
+```
+
+#### Exemplo de logs correlacionados com trace/span
+
+Nos adapters mock (ex.: `MockPaymentProcessor`):
+
+```ts
+this.appLogger.error("Payment processing failed", { context: "MockPaymentProcessor" });
+this.appLogger.info("Payment processed successfully", { context: "MockPaymentProcessor" });
+```
+
+A implementação `OtelAppLogger` adiciona `trace_id` e `span_id` do contexto ativo quando houver span válido, permitindo navegação log → trace no Grafana.
+
+### Variáveis de ambiente úteis no BFF
+
+Defaults já aplicados no bootstrap:
+
+- `OTEL_SERVICE_NAME=bff`
+- `OTEL_SERVICE_NAMESPACE=wallet-case`
+- `NODE_ENV=dev`
+- `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4318/v1/traces`
+- `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://localhost:4318/v1/metrics`
+- `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://localhost:4318/v1/logs`
+- `OTEL_METRIC_EXPORT_INTERVAL_MS=10000`
+
+### Acesso ao Grafana
+
+- URL: <http://localhost:3001>
+- Usuário: `admin`
+- Senha: `admin`
+
+Datasources são provisionados automaticamente em:
+
+- `observability/grafana/provisioning/datasources/datasources.yml`
+
+Configurações de correlação já habilitadas:
+
+- **Prometheus** com `exemplarTraceIdDestinations` para Tempo.
+- **Loki** com `derivedFields` para extrair `traceId|traceid|trace_id` e abrir trace no Tempo.
+- **Tempo** com `tracesToLogsV2`, `tracesToMetrics`, `serviceMap` e `nodeGraph`.
+
+### Dashboard provisionada
+
+Dashboard definida em:
+
+- `observability/grafana/provisioning/dashboards/payment-observability.json`
+
+Provisionamento da pasta no Grafana:
+
+- provider `Wallet Case Dashboards`
+- folder `Wallet Case`
+- uid da dashboard: `bff-payments-overview`
+- título: `BFF Payments Overview`
+- refresh: `10s`
+- janela padrão: últimos `15m`
+
+Painéis já configurados:
+
+- `Pagamentos Realizados` (stat)
+- `Tempo Médio do Pagamento` (stat)
+- `Percentual de Sucesso (Pagamento)` (stat)
+- `Tempo Médio por Step` (timeseries)
+- `Percentual de Sucesso por Step` (barchart)
+- `Traces Recentes (BFF)` (table via Loki + trace id)
+- `Logs Recentes (BFF)` (table via Loki)
+
+Observação: os painéis de logs/traces usam filtro Loki com `job="wallet-case/bff"`. Para visualização consistente, mantenha esse label no payload de logs enviado ao Collector.
 
 ---
 
