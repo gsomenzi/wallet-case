@@ -2,7 +2,7 @@ import { useTheme } from "@shopify/restyle";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import type { Theme } from "@/constants/theme";
-import { PaymentResponse } from "@/features/payment/payment.entity";
+import { Payment } from "@/features/payment/payment.entity";
 import { PaymentService } from "@/features/payment/payment.service";
 import type { ConnectionStatusBannerStatus } from "./components/connection-status-banner";
 import {
@@ -12,7 +12,7 @@ import {
     getPaymentTotalTimeLabel,
 } from "./payment-feedback.presenter";
 
-export type ResponseInfoItem = {
+export type PaymentInfoItem = {
     title: string;
     value: string;
 };
@@ -24,30 +24,24 @@ export function usePaymentFeedbackViewModel() {
     const appTheme = useTheme<Theme>();
     const { data } = useLocalSearchParams<{ data?: string | string[] }>();
     const paymentService = useMemo(() => new PaymentService(), []);
-    const initialPaymentData = useMemo(() => PaymentResponse.deserialize(data), [data]);
-    const [paymentData, setPaymentData] = useState<PaymentResponse | null>(initialPaymentData);
+    const initialPaymentData = useMemo(() => Payment.deserialize(data), [data]);
+    const [paymentData, setPaymentData] = useState<Payment | null>(initialPaymentData);
     const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null);
     const [isConnectionBannerVisible, setIsConnectionBannerVisible] = useState(false);
 
     useEffect(() => {
         setPaymentData(initialPaymentData);
-
         if (!initialPaymentData?.transactionId) return;
-
         return paymentService.subscribePaymentUpdates(
             { transactionId: initialPaymentData.transactionId },
-            (updatedPayment) => setPaymentData(PaymentResponse.deserialize(updatedPayment)),
+            (updatedPayment) => setPaymentData(Payment.deserialize(updatedPayment)),
             (isConnected) => setConnectionStatus(isConnected ? "connected" : "disconnected")
         );
     }, [initialPaymentData, paymentService]);
 
     useEffect(() => {
-        if (!connectionStatus) {
-            return;
-        }
-
+        if (!connectionStatus) return;
         setIsConnectionBannerVisible(true);
-
         const timeoutId = setTimeout(() => {
             setIsConnectionBannerVisible(false);
         }, 3000);
@@ -65,11 +59,11 @@ export function usePaymentFeedbackViewModel() {
         return getPaymentStatusColorToken(paymentData);
     }, [paymentData]);
 
-    const responseInfoList = useMemo<ResponseInfoItem[]>(() => {
+    const paymentInfoList = useMemo<PaymentInfoItem[]>(() => {
         if (!paymentData) return [];
         const paymentFailureMessage = getPaymentFailureMessage(paymentData);
 
-        const items: ResponseInfoItem[] = [
+        const items: PaymentInfoItem[] = [
             { title: "Status", value: paymentStatusText },
             { title: "Transação", value: paymentData.transactionId },
             { title: "Tempo total", value: getPaymentTotalTimeLabel(paymentData) },
@@ -98,7 +92,7 @@ export function usePaymentFeedbackViewModel() {
         isPaymentInProgress,
         paymentData,
         paymentStatusColorToken,
-        responseInfoList,
+        paymentInfoList,
     };
 }
 

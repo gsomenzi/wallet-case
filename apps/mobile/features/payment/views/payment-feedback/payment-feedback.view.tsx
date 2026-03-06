@@ -10,7 +10,7 @@ export function PaymentFeedbackView({
     isPaymentInProgress,
     paymentData,
     paymentStatusColorToken,
-    responseInfoList,
+    paymentInfoList,
 }: PaymentFeedbackViewModelProps) {
     return (
         <ThemedView flex={1}>
@@ -21,11 +21,11 @@ export function PaymentFeedbackView({
                 </ThemedText>
                 {paymentData ? (
                     <ThemedView borderWidth={1} borderColor="border" borderRadius={appTheme.radii.md} overflow="hidden">
-                        {responseInfoList.map((item, index) => (
+                        {paymentInfoList.map((item, index) => (
                             <ThemedView
                                 key={item.title}
                                 padding="lg"
-                                borderBottomWidth={index < responseInfoList.length - 1 ? 1 : 0}
+                                borderBottomWidth={index < paymentInfoList.length - 1 ? 1 : 0}
                                 borderBottomColor="border"
                             >
                                 <ThemedText variant="defaultSemiBold">{item.title}</ThemedText>

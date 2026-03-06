@@ -22,7 +22,7 @@ export enum PaymentStatus {
     Error = "error",
 }
 
-export class PaymentResponse {
+export class Payment {
     status: PaymentStatus;
     transactionId: string;
     totalTimeMs: number;
@@ -43,7 +43,7 @@ export class PaymentResponse {
         this.failure = failure;
     }
 
-    static deserialize(data: unknown): PaymentResponse | null {
+    static deserialize(data: unknown): Payment | null {
         const normalizedData = (() => {
             if (typeof data === "string") {
                 try {
@@ -60,7 +60,7 @@ export class PaymentResponse {
             return null;
         }
 
-        const parsedData = normalizedData as Partial<PaymentResponse>;
+        const parsedData = normalizedData as Partial<Payment>;
 
         if (!parsedData.status || !Object.values(PaymentStatus).includes(parsedData.status)) {
             return null;
@@ -99,7 +99,7 @@ export class PaymentResponse {
                   }
                 : undefined;
 
-        return new PaymentResponse(parsedData.status, parsedData.transactionId, parsedData.totalTimeMs, steps, failure);
+        return new Payment(parsedData.status, parsedData.transactionId, parsedData.totalTimeMs, steps, failure);
     }
 
     serialize(): string {

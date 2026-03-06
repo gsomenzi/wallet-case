@@ -1,12 +1,12 @@
 import type { Theme } from "@/constants/theme";
-import { type PaymentResponse, PaymentStatus } from "@/features/payment/payment.entity";
+import { type Payment, PaymentStatus } from "@/features/payment/payment.entity";
 
 export type PaymentFeedbackStatusColorToken = keyof Pick<
     Theme["colors"],
     "primary" | "success" | "danger" | "secondary"
 >;
 
-export function getPaymentStatusLabel(payment: PaymentResponse): string {
+export function getPaymentStatusLabel(payment: Payment): string {
     switch (payment.status) {
         case PaymentStatus.Pending:
             return "Pendente";
@@ -33,7 +33,7 @@ export function getPaymentStatusLabel(payment: PaymentResponse): string {
     }
 }
 
-export function getPaymentStatusColorToken(payment: PaymentResponse): PaymentFeedbackStatusColorToken {
+export function getPaymentStatusColorToken(payment: Payment): PaymentFeedbackStatusColorToken {
     switch (payment.status) {
         case PaymentStatus.Approved:
             return "success";
@@ -45,11 +45,11 @@ export function getPaymentStatusColorToken(payment: PaymentResponse): PaymentFee
     }
 }
 
-export function getPaymentTotalTimeLabel(payment: PaymentResponse): string {
+export function getPaymentTotalTimeLabel(payment: Payment): string {
     return payment.isFinalStatus() ? `${payment.totalTimeMs}ms` : "Em andamento";
 }
 
-export function getPaymentFailureMessage(payment: PaymentResponse): string | null {
+export function getPaymentFailureMessage(payment: Payment): string | null {
     if (!payment.failure?.message) {
         return null;
     }
