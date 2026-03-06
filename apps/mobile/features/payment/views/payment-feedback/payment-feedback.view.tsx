@@ -1,10 +1,13 @@
+import { ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import type { PaymentFeedbackViewModelProps } from "./payment-feedback.view-model";
 
 export function PaymentFeedbackView({
     appTheme,
+    isPaymentInProgress,
     paymentData,
+    paymentStatusColorToken,
     responseInfoList,
     styles,
 }: PaymentFeedbackViewModelProps) {
@@ -12,7 +15,7 @@ export function PaymentFeedbackView({
         <ThemedView flex={1}>
             <ThemedView flex={1} padding="lg" justifyContent="center" alignItems="center" gap="lg">
                 <ThemedText textAlign="center" variant="subtitle">
-                    Pagamento efetuado
+                    Pagamento enviado
                 </ThemedText>
                 {paymentData ? (
                     <ThemedView borderWidth={1} borderColor="border" borderRadius={appTheme.radii.md} overflow="hidden">
@@ -25,7 +28,19 @@ export function PaymentFeedbackView({
                                 }
                             >
                                 <ThemedText variant="defaultSemiBold">{item.title}</ThemedText>
-                                <ThemedText>{item.value}</ThemedText>
+                                {item.title === "Status" ? (
+                                    <ThemedView flexDirection="row" alignItems="center" gap="sm">
+                                        <ThemedText color={paymentStatusColorToken}>{item.value}</ThemedText>
+                                        {isPaymentInProgress ? (
+                                            <ActivityIndicator
+                                                size="small"
+                                                color={appTheme.colors[paymentStatusColorToken]}
+                                            />
+                                        ) : null}
+                                    </ThemedView>
+                                ) : (
+                                    <ThemedText>{item.value}</ThemedText>
+                                )}
                             </ThemedView>
                         ))}
                     </ThemedView>

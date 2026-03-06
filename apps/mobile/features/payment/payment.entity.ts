@@ -5,6 +5,12 @@ export type StepResponse = {
 
 export enum PaymentStatus {
     Pending = "pending",
+    ValidatingAccount = "validating_account",
+    ValidatingCard = "validating_card",
+    ValidatingAntifraud = "validating_antifraud",
+    ProcessingAcquirer = "processing_acquirer",
+    ProcessingPayment = "processing_payment",
+    SendingNotification = "sending_notification",
     Approved = "approved",
     Declined = "declined",
     Error = "error",
@@ -23,3 +29,7 @@ export class PaymentResponse {
         this.steps = steps;
     }
 }
+
+export type PaymentSubscribePayload = {
+    transactionId: string;
+};

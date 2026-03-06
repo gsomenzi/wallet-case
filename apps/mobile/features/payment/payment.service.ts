@@ -1,8 +1,11 @@
 import { createHttpClient } from "@/infrastructure/http-client/http-client.factory";
+import { createWebSocketClient } from "@/infrastructure/websocket-client/websocket-client.factory";
+import { type PaymentResponse, type PaymentSubscribePayload } from "./payment.entity";
 import { PaymentRequest } from "./payment-request.dto";
 
 export class PaymentService {
     httpClient = createHttpClient();
+    private readonly webSocketClient = createWebSocketClient();
 
     async processPayment(payload: PaymentRequest) {
         try {
@@ -12,5 +15,18 @@ export class PaymentService {
             console.error("Payment processing failed:", error);
             throw error;
         }
+    }
+
+    subscribePaymentUpdates(
+        payload: PaymentSubscribePayload,
+        onPaymentUpdated: (payment: PaymentResponse) => void
+    ): () => void {
+        return this.webSocketClient.subscribe({
+            namespace: "payments",
+            subscribeEvent: "payment.subscribe",
+            subscribePayload: payload,
+            messageEvent: "payment.updated",
+            onMessage: onPaymentUpdated,
+        });
     }
 }
