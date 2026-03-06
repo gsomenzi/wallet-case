@@ -1,10 +1,10 @@
 import { useTheme } from "@shopify/restyle";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { StyleSheet } from "react-native";
 import type { Theme } from "@/constants/theme";
 import { PaymentResponse } from "@/features/payment/payment.entity";
 import { PaymentService } from "@/features/payment/payment.service";
+import type { ConnectionStatusBannerStatus } from "./components/connection-status-banner";
 import {
     getPaymentFailureMessage,
     getPaymentStatusColorToken,
@@ -18,65 +18,55 @@ export type ResponseInfoItem = {
 };
 
 type StatusColorToken = keyof Theme["colors"];
+type ConnectionStatus = "connected" | "disconnected";
 
 export function usePaymentFeedbackViewModel() {
     const appTheme = useTheme<Theme>();
     const { data } = useLocalSearchParams<{ data?: string | string[] }>();
     const paymentService = useMemo(() => new PaymentService(), []);
-
-    const initialPaymentData = useMemo(() => {
-        if (typeof data !== "string") {
-            return null;
-        }
-
-        try {
-            const parsedData = JSON.parse(data);
-            return PaymentResponse.deserialize(parsedData);
-        } catch {
-            return null;
-        }
-    }, [data]);
-
+    const initialPaymentData = useMemo(() => PaymentResponse.deserialize(data), [data]);
     const [paymentData, setPaymentData] = useState<PaymentResponse | null>(initialPaymentData);
+    const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null);
+    const [isConnectionBannerVisible, setIsConnectionBannerVisible] = useState(false);
 
     useEffect(() => {
         setPaymentData(initialPaymentData);
-    }, [initialPaymentData]);
+
+        if (!initialPaymentData?.transactionId) return;
+
+        return paymentService.subscribePaymentUpdates(
+            { transactionId: initialPaymentData.transactionId },
+            (updatedPayment) => setPaymentData(PaymentResponse.deserialize(updatedPayment)),
+            (isConnected) => setConnectionStatus(isConnected ? "connected" : "disconnected")
+        );
+    }, [initialPaymentData, paymentService]);
 
     useEffect(() => {
-        if (!paymentData?.transactionId) {
+        if (!connectionStatus) {
             return;
         }
 
-        return paymentService.subscribePaymentUpdates(
-            { transactionId: paymentData.transactionId },
-            (updatedPayment) => {
-                setPaymentData(PaymentResponse.deserialize(updatedPayment));
-            }
-        );
-    }, [paymentData?.transactionId, paymentService]);
+        setIsConnectionBannerVisible(true);
+
+        const timeoutId = setTimeout(() => {
+            setIsConnectionBannerVisible(false);
+        }, 3000);
+
+        return () => clearTimeout(timeoutId);
+    }, [connectionStatus]);
 
     const paymentStatusText = useMemo(() => {
-        if (!paymentData) {
-            return "Sem dados de pagamento";
-        }
-
+        if (!paymentData) return "Sem dados de pagamento";
         return getPaymentStatusLabel(paymentData);
     }, [paymentData]);
 
     const paymentStatusColorToken = useMemo<StatusColorToken>(() => {
-        if (!paymentData) {
-            return "secondary";
-        }
-
+        if (!paymentData) return "secondary";
         return getPaymentStatusColorToken(paymentData);
     }, [paymentData]);
 
     const responseInfoList = useMemo<ResponseInfoItem[]>(() => {
-        if (!paymentData) {
-            return [];
-        }
-
+        if (!paymentData) return [];
         const paymentFailureMessage = getPaymentFailureMessage(paymentData);
 
         const items: ResponseInfoItem[] = [
@@ -93,31 +83,22 @@ export function usePaymentFeedbackViewModel() {
     }, [paymentData, paymentStatusText]);
 
     const isPaymentInProgress = useMemo(() => {
-        if (!paymentData) {
-            return false;
-        }
-
+        if (!paymentData) return false;
         return paymentData.isInProgress();
     }, [paymentData]);
 
-    const styles = useMemo(
-        () =>
-            StyleSheet.create({
-                responseInfoItemWithDivider: {
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: "#ccc",
-                },
-            }),
-        []
-    );
+    const connectionBannerStatus = useMemo<ConnectionStatusBannerStatus | null>(() => {
+        if (!connectionStatus || !isConnectionBannerVisible) return null;
+        return connectionStatus === "connected" ? "success" : "error";
+    }, [connectionStatus, isConnectionBannerVisible]);
 
     return {
         appTheme,
+        connectionBannerStatus,
         isPaymentInProgress,
         paymentData,
         paymentStatusColorToken,
         responseInfoList,
-        styles,
     };
 }
 

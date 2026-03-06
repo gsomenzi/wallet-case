@@ -44,11 +44,23 @@ export class PaymentResponse {
     }
 
     static deserialize(data: unknown): PaymentResponse | null {
-        if (!data || typeof data !== "object") {
+        const normalizedData = (() => {
+            if (typeof data === "string") {
+                try {
+                    return JSON.parse(data);
+                } catch {
+                    return null;
+                }
+            }
+
+            return data;
+        })();
+
+        if (!normalizedData || typeof normalizedData !== "object") {
             return null;
         }
 
-        const parsedData = data as Partial<PaymentResponse>;
+        const parsedData = normalizedData as Partial<PaymentResponse>;
 
         if (!parsedData.status || !Object.values(PaymentStatus).includes(parsedData.status)) {
             return null;

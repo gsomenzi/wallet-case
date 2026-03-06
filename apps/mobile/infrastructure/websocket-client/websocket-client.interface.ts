@@ -4,6 +4,7 @@ export type WebSocketSubscribeOptions<TSubscribePayload, TMessagePayload> = {
     subscribePayload: TSubscribePayload;
     messageEvent: string;
     onMessage: (payload: TMessagePayload) => void;
+    onConnectionChange?: (isConnected: boolean) => void;
 };
 
 export abstract class WebSocketClient {

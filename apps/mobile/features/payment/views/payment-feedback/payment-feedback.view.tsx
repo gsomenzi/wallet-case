@@ -1,18 +1,20 @@
 import { ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { ConnectionStatusBanner } from "./components/connection-status-banner";
 import type { PaymentFeedbackViewModelProps } from "./payment-feedback.view-model";
 
 export function PaymentFeedbackView({
     appTheme,
+    connectionBannerStatus,
     isPaymentInProgress,
     paymentData,
     paymentStatusColorToken,
     responseInfoList,
-    styles,
 }: PaymentFeedbackViewModelProps) {
     return (
         <ThemedView flex={1}>
+            {connectionBannerStatus ? <ConnectionStatusBanner status={connectionBannerStatus} /> : null}
             <ThemedView flex={1} padding="lg" justifyContent="center" alignItems="center" gap="lg">
                 <ThemedText textAlign="center" variant="subtitle">
                     Pagamento enviado
@@ -23,9 +25,8 @@ export function PaymentFeedbackView({
                             <ThemedView
                                 key={item.title}
                                 padding="lg"
-                                style={
-                                    index < responseInfoList.length - 1 ? styles.responseInfoItemWithDivider : undefined
-                                }
+                                borderBottomWidth={index < responseInfoList.length - 1 ? 1 : 0}
+                                borderBottomColor="border"
                             >
                                 <ThemedText variant="defaultSemiBold">{item.title}</ThemedText>
                                 {item.title === "Status" ? (

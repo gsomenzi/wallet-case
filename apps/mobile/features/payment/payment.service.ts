@@ -23,7 +23,8 @@ export class PaymentService {
 
     subscribePaymentUpdates(
         payload: PaymentSubscribePayload,
-        onPaymentUpdated: (payment: PaymentResponse) => void
+        onPaymentUpdated: (payment: PaymentResponse) => void,
+        onConnectionChange?: (isConnected: boolean) => void
     ): () => void {
         return this.webSocketClient.subscribe({
             namespace: "payments",
@@ -31,6 +32,7 @@ export class PaymentService {
             subscribePayload: payload,
             messageEvent: "payment.updated",
             onMessage: onPaymentUpdated,
+            onConnectionChange,
         });
     }
 }
