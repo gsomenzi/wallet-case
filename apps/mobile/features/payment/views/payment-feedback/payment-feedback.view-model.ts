@@ -3,8 +3,14 @@ import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet } from "react-native";
 import type { Theme } from "@/constants/theme";
-import { type PaymentResponse, PaymentStatus } from "@/features/payment/payment.entity";
+import { PaymentResponse } from "@/features/payment/payment.entity";
 import { PaymentService } from "@/features/payment/payment.service";
+import {
+    getPaymentFailureMessage,
+    getPaymentStatusColorToken,
+    getPaymentStatusLabel,
+    getPaymentTotalTimeLabel,
+} from "./payment-feedback.presenter";
 
 export type ResponseInfoItem = {
     title: string;
@@ -12,12 +18,6 @@ export type ResponseInfoItem = {
 };
 
 type StatusColorToken = keyof Theme["colors"];
-
-const FINAL_PAYMENT_STATUSES = new Set<PaymentStatus>([
-    PaymentStatus.Approved,
-    PaymentStatus.Declined,
-    PaymentStatus.Error,
-]);
 
 export function usePaymentFeedbackViewModel() {
     const appTheme = useTheme<Theme>();
@@ -30,7 +30,8 @@ export function usePaymentFeedbackViewModel() {
         }
 
         try {
-            return JSON.parse(data) as PaymentResponse;
+            const parsedData = JSON.parse(data);
+            return PaymentResponse.deserialize(parsedData);
         } catch {
             return null;
         }
@@ -50,7 +51,7 @@ export function usePaymentFeedbackViewModel() {
         return paymentService.subscribePaymentUpdates(
             { transactionId: paymentData.transactionId },
             (updatedPayment) => {
-                setPaymentData(updatedPayment);
+                setPaymentData(PaymentResponse.deserialize(updatedPayment));
             }
         );
     }, [paymentData?.transactionId, paymentService]);
@@ -60,30 +61,7 @@ export function usePaymentFeedbackViewModel() {
             return "Sem dados de pagamento";
         }
 
-        switch (paymentData.status) {
-            case PaymentStatus.Pending:
-                return "Pendente";
-            case PaymentStatus.ValidatingAccount:
-                return "Validando conta";
-            case PaymentStatus.ValidatingCard:
-                return "Validando cartão";
-            case PaymentStatus.ValidatingAntifraud:
-                return "Analisando antifraude";
-            case PaymentStatus.ProcessingAcquirer:
-                return "Processando adquirente";
-            case PaymentStatus.ProcessingPayment:
-                return "Processando pagamento";
-            case PaymentStatus.SendingNotification:
-                return "Enviando notificação";
-            case PaymentStatus.Approved:
-                return "Aprovado";
-            case PaymentStatus.Declined:
-                return "Recusado";
-            case PaymentStatus.Error:
-                return "Erro";
-            default:
-                return paymentData.status;
-        }
+        return getPaymentStatusLabel(paymentData);
     }, [paymentData]);
 
     const paymentStatusColorToken = useMemo<StatusColorToken>(() => {
@@ -91,15 +69,7 @@ export function usePaymentFeedbackViewModel() {
             return "secondary";
         }
 
-        switch (paymentData.status) {
-            case PaymentStatus.Approved:
-                return "success";
-            case PaymentStatus.Declined:
-            case PaymentStatus.Error:
-                return "danger";
-            default:
-                return "primary";
-        }
+        return getPaymentStatusColorToken(paymentData);
     }, [paymentData]);
 
     const responseInfoList = useMemo<ResponseInfoItem[]>(() => {
@@ -107,13 +77,19 @@ export function usePaymentFeedbackViewModel() {
             return [];
         }
 
-        const isFinalStatus = FINAL_PAYMENT_STATUSES.has(paymentData.status);
+        const paymentFailureMessage = getPaymentFailureMessage(paymentData);
 
-        return [
+        const items: ResponseInfoItem[] = [
             { title: "Status", value: paymentStatusText },
             { title: "Transação", value: paymentData.transactionId },
-            { title: "Tempo total", value: isFinalStatus ? `${paymentData.totalTimeMs}ms` : "Em andamento" },
+            { title: "Tempo total", value: getPaymentTotalTimeLabel(paymentData) },
         ];
+
+        if (paymentFailureMessage) {
+            items.push({ title: "Erro", value: paymentFailureMessage });
+        }
+
+        return items;
     }, [paymentData, paymentStatusText]);
 
     const isPaymentInProgress = useMemo(() => {
@@ -121,7 +97,7 @@ export function usePaymentFeedbackViewModel() {
             return false;
         }
 
-        return !FINAL_PAYMENT_STATUSES.has(paymentData.status);
+        return paymentData.isInProgress();
     }, [paymentData]);
 
     const styles = useMemo(

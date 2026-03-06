@@ -48,7 +48,7 @@ export function usePaymentFormViewModel() {
             setIsLoading(true);
             setError(null);
 
-            const response = await paymentService.processPayment({
+            const payment = await paymentService.processPayment({
                 cardNumber: data.cardNumber,
                 cardHolder: data.cardHolder,
                 expirationDate: data.expirationDate,
@@ -59,7 +59,7 @@ export function usePaymentFormViewModel() {
             router.push({
                 pathname: "/payment-feedback",
                 params: {
-                    data: JSON.stringify(response),
+                    data: payment.serialize(),
                 },
             });
         } catch (caughtError: unknown) {
