@@ -4,11 +4,10 @@ import { PersistenceModule } from "src/infrastructure/persistence/persistence.mo
 import { PaymentController } from "./payment.controller";
 import { PaymentService } from "./payment.service";
 import { PaymentUpdatesGateway } from "./payment-updates.gateway";
-import { PaymentWorkflowService } from "./payment-workflow.service";
 
 @Module({
     imports: [BackendModule, PersistenceModule],
     controllers: [PaymentController],
-    providers: [PaymentService, PaymentWorkflowService, PaymentUpdatesGateway],
+    providers: [PaymentService, PaymentUpdatesGateway],
 })
 export class PaymentModule {}

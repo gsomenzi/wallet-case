@@ -1,21 +1,31 @@
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, TestingModule } from "@nestjs/testing";
 import { AccountValidationFailedError } from "../../application/application-errors/account-validation-error";
+import { AccountValidationRequestedProcessor } from "../../infrastructure/backend/account-validator/account-validation-requested.processor";
 import { AccountValidator } from "../../infrastructure/backend/account-validator/account-validator.interface";
+import { AcquirerProcessingRequestedProcessor } from "../../infrastructure/backend/acquirer-processor/acquirer-processing-requested.processor";
 import { AcquirerProcessor } from "../../infrastructure/backend/acquirer-processor/acquirer-processor.interface";
 import { AntiFraudValidator } from "../../infrastructure/backend/anti-fraud-validator/anti-fraud-validator.interface";
+import { AntifraudValidationRequestedProcessor } from "../../infrastructure/backend/anti-fraud-validator/antifraud-validation-requested.processor";
+import { CardValidationRequestedProcessor } from "../../infrastructure/backend/card-validator/card-validation-requested.processor";
 import { CardValidator } from "../../infrastructure/backend/card-validator/card-validator.interface";
+import { NotificationRequestedProcessor } from "../../infrastructure/backend/notification-sender/notification-requested.processor";
 import { NotificationSender } from "../../infrastructure/backend/notification-sender/notification-sender.interface";
+import { PaymentProcessingRequestedProcessor } from "../../infrastructure/backend/payment-processor/payment-processing-requested.processor";
 import { PaymentProcessor } from "../../infrastructure/backend/payment-processor/payment-processor.interface";
+import { PaymentStartedProcessor } from "../../infrastructure/backend/payment-started.processor";
+import { PaymentWorkflowCoordinator } from "../../infrastructure/backend/payment-workflow-coordinator.service";
 import { MetricRecorder } from "../../infrastructure/observability/metric-recorder/metric-recorder.interface";
 import { TraceInstrumenter } from "../../infrastructure/observability/trace-instrumenter/trace-instrumenter.interface";
 import { PaymentStorage } from "../../infrastructure/persistence/payment-storage/payment-storage.interface";
 import { PaymentResponse, PaymentStatus } from "./payment-response.entity";
 import { PaymentWorkflowEvent } from "./payment-workflow.events";
-import { PaymentWorkflowService } from "./payment-workflow.service";
 
-describe("PaymentWorkflowService", () => {
-    let service: PaymentWorkflowService;
+describe("Payment workflow processors", () => {
+    let paymentStartedProcessor: PaymentStartedProcessor;
+    let accountValidationRequestedProcessor: AccountValidationRequestedProcessor;
+    let paymentProcessingRequestedProcessor: PaymentProcessingRequestedProcessor;
+    let notificationRequestedProcessor: NotificationRequestedProcessor;
     let paymentStorage: { save: jest.Mock; findByTransactionId: jest.Mock };
     let eventEmitter: { emit: jest.Mock };
     let accountValidator: { validate: jest.Mock };
@@ -23,7 +33,14 @@ describe("PaymentWorkflowService", () => {
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
-                PaymentWorkflowService,
+                PaymentWorkflowCoordinator,
+                PaymentStartedProcessor,
+                AccountValidationRequestedProcessor,
+                CardValidationRequestedProcessor,
+                AntifraudValidationRequestedProcessor,
+                AcquirerProcessingRequestedProcessor,
+                PaymentProcessingRequestedProcessor,
+                NotificationRequestedProcessor,
                 {
                     provide: AccountValidator,
                     useValue: {
@@ -94,7 +111,14 @@ describe("PaymentWorkflowService", () => {
             ],
         }).compile();
 
-        service = module.get<PaymentWorkflowService>(PaymentWorkflowService);
+        paymentStartedProcessor = module.get<PaymentStartedProcessor>(PaymentStartedProcessor);
+        accountValidationRequestedProcessor = module.get<AccountValidationRequestedProcessor>(
+            AccountValidationRequestedProcessor
+        );
+        paymentProcessingRequestedProcessor = module.get<PaymentProcessingRequestedProcessor>(
+            PaymentProcessingRequestedProcessor
+        );
+        notificationRequestedProcessor = module.get<NotificationRequestedProcessor>(NotificationRequestedProcessor);
         paymentStorage = module.get<{ save: jest.Mock; findByTransactionId: jest.Mock }>(PaymentStorage);
         eventEmitter = module.get<{ emit: jest.Mock }>(EventEmitter2);
         accountValidator = module.get<{ validate: jest.Mock }>(AccountValidator);
@@ -103,7 +127,7 @@ describe("PaymentWorkflowService", () => {
     it("should fan out workflow start to first business event", async () => {
         const payment = PaymentResponse.create();
 
-        await service.handlePaymentStarted({ transactionId: payment.transactionId });
+        await paymentStartedProcessor.handlePaymentStarted({ transactionId: payment.transactionId });
 
         expect(accountValidator.validate).not.toHaveBeenCalled();
         expect(eventEmitter.emit).toHaveBeenCalledWith(PaymentWorkflowEvent.AccountValidationRequested, {
@@ -115,7 +139,9 @@ describe("PaymentWorkflowService", () => {
         const payment = PaymentResponse.create();
         paymentStorage.findByTransactionId.mockResolvedValue(payment);
 
-        await service.handleAccountValidationRequested({ transactionId: payment.transactionId });
+        await accountValidationRequestedProcessor.handleAccountValidationRequested({
+            transactionId: payment.transactionId,
+        });
 
         expect(accountValidator.validate).toHaveBeenCalled();
         expect(payment.status).toBe(PaymentStatus.ValidatingAccount);
@@ -130,7 +156,7 @@ describe("PaymentWorkflowService", () => {
         const payment = PaymentResponse.create();
         paymentStorage.findByTransactionId.mockResolvedValue(payment);
 
-        await service.handleNotificationRequested({ transactionId: payment.transactionId });
+        await notificationRequestedProcessor.handleNotificationRequested({ transactionId: payment.transactionId });
 
         expect(payment.status).toBe(PaymentStatus.Approved);
         expect(payment.steps).toHaveLength(1);
@@ -141,7 +167,9 @@ describe("PaymentWorkflowService", () => {
         const payment = PaymentResponse.create();
         paymentStorage.findByTransactionId.mockResolvedValue(payment);
 
-        await service.handlePaymentProcessingRequested({ transactionId: payment.transactionId });
+        await paymentProcessingRequestedProcessor.handlePaymentProcessingRequested({
+            transactionId: payment.transactionId,
+        });
 
         expect(payment.status).toBe(PaymentStatus.ProcessingPayment);
         expect(payment.steps).toHaveLength(1);
@@ -153,7 +181,9 @@ describe("PaymentWorkflowService", () => {
         paymentStorage.findByTransactionId.mockResolvedValue(payment);
         accountValidator.validate.mockRejectedValue(new AccountValidationFailedError());
 
-        await service.handleAccountValidationRequested({ transactionId: payment.transactionId });
+        await accountValidationRequestedProcessor.handleAccountValidationRequested({
+            transactionId: payment.transactionId,
+        });
 
         expect(payment.status).toBe(PaymentStatus.Declined);
         expect(eventEmitter.emit).not.toHaveBeenCalledWith(PaymentWorkflowEvent.CardValidationRequested, {

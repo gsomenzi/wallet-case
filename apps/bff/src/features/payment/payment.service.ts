@@ -27,13 +27,14 @@ export class PaymentService {
         try {
             return await this.traceInstrumenter.usingSpan("payment_execution", {}, async () => {
                 const paymentResponse: PaymentResponse = PaymentResponse.create();
+                const { transactionId } = paymentResponse;
                 await this.paymentStorage.save(paymentResponse);
                 this.eventEmitter.emit(PaymentWorkflowEvent.PaymentUpdated, {
-                    transactionId: paymentResponse.transactionId,
+                    transactionId,
                     payment: paymentResponse,
                 } satisfies PaymentUpdatedEventPayload);
                 this.eventEmitter.emit(PaymentWorkflowEvent.PaymentStarted, {
-                    transactionId: paymentResponse.transactionId,
+                    transactionId,
                 } satisfies PaymentWorkflowEventPayload);
                 return paymentResponse;
             });
