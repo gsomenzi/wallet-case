@@ -55,9 +55,9 @@ flowchart LR
   FORM[Payment Form\nView + ViewModel]
   FEEDBACK[Payment Feedback\nView + ViewModel]
   SERVICE[PaymentService]
-  HTTP[HttpClient\n(Axios)]
-  WS[WebSocketClient\n(Socket.IO)]
-  BFF[(BFF)]
+  HTTP[HttpClient\nAxios]
+  WS[WebSocketClient\nSocket IO]
+  BFF[BFF API]
 
   ROUTER --> FORM
   FORM --> SERVICE
