@@ -142,6 +142,44 @@ Motivação:
 
 > Essa escolha foi feita para **maximizar a compatibilidade com o ambiente de desenvolvimento**.
 
+### 3) Acoplamento intencional ao NestJS (contexto de avaliação)
+
+Por se tratar de um **sistema de teste para fins de avaliação técnica**, algumas implementações foram mantidas de forma mais direta e pragmática dentro do ecossistema NestJS.
+
+Exemplo prático:
+
+- Parte da infraestrutura foi registrada diretamente como módulos/providers do Nest, sem camadas extras de abstração que aumentariam complexidade para este contexto.
+
+Motivação:
+
+- Reduzir tempo de implementação
+- Facilitar entendimento e execução do projeto pelo avaliador
+- Evitar overengineering para um cenário controlado de avaliação
+
+### 4) Fluxo assíncrono com sistema de eventos do NestJS
+
+Para implementar o processamento assíncrono de pagamento, foi escolhido o **EventEmitter do NestJS**.
+
+Motivação:
+
+- Evitar dependência de infraestrutura externa de filas (RabbitMQ, Kafka, etc.)
+- Economizar tempo de implementação no escopo do case
+- Diminuir demanda de recursos da máquina do avaliador ao rodar o projeto localmente
+
+Com isso, o sistema consegue processar o pagamento em etapas assíncronas sem exigir setup adicional além do próprio BFF.
+
+### 5) Atualização em tempo real via WebSocket no app mobile
+
+Foi adotado **WebSocket (Gateway do Nest + Socket.IO no mobile)** para que o app receba atualizações de status do pagamento em tempo real na tela de feedback.
+
+Benefícios da abordagem:
+
+- Atualização contínua do status sem polling agressivo
+- Suporte ao fluxo assíncrono sem necessidade de filas externas
+- Dispensa de sistema de push notifications para este caso de uso específico
+
+Essa combinação permitiu uma experiência de acompanhamento em tempo real mantendo arquitetura e setup locais simples para avaliação.
+
 ## Observabilidade (local)
 
 O projeto já possui observabilidade implementada no BFF e stack local provisionada com:
